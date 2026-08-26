@@ -67,26 +67,24 @@ explicit policies in the same migration. Never add a table without them.
 
 ## Symbols (symbo.ls)
 
-### The CLI cannot be installed
+### The CLI
 
-Do not spend time on this. The published state is broken:
+`smbls` v3.14.786 is installed at `~/.local/bin/smbls`. Install it with:
 
-- `@symbo.ls/cli` is public on npm. Thirteen first-party packages it needs
-  are not: `channels`, `frank`, `sync`, `tunnel`, `utils`, `runner`,
-  `frank-audit`, `brender`, `report`, `state`, `router`, `performance`,
-  `claude-code`. All return 404. `npm install` fails on the declared
-  dependency `@symbo.ls/channels`, so it can never resolve.
-- The shipped `dist/` is not bundled. It is 298 transpiled files. The entry
-  is a 132-byte shim that imports `@symbo.ls/frank` first. Extracting the
-  tarball by hand does not help.
-- `smbls` on npm is a library. Its manifest sets `bin: None`. It installs no
-  command.
-- `symbo-ls/smbls`, the monorepo the docs point to, is private (404).
-- The public `symbo-ls/cli` repo is an old v2.7.5 remnant. Its dependency
-  `@symbo.ls/default-config` was never published.
+```bash
+npm install -g --allow-scripts=esbuild @symbo.ls/cli
+```
 
-Therefore `smbls login`, `smbls push`, and `smbls pull` are all unavailable.
-Recheck npm before you conclude this is still true, then move on.
+Use `--allow-scripts=esbuild` so esbuild fetches its platform binary. Without
+it `smbls build` and `smbls brender` may fail.
+
+History: this package and 13 first-party dependencies were unpublished on npm
+for part of 2026-08-26. They are published now. If an install fails on a
+404 for an `@symbo.ls/*` package, that is the cause — check npm before
+looking for a local fault.
+
+Auth: `smbls login` stores a JWT in `~/.smblsrc` and the OS keychain. Wipe it
+with `smbls logout`. That token also satisfies the MCP `token` parameter.
 
 ### Use the Symbols MCP server
 
