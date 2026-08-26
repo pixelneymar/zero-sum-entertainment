@@ -1,13 +1,22 @@
+// Last results for this game, newest first. Collapsible; the open flag is
+// this panel's own UI state, never the app's.
 export const HistoryPanel = {
   flow: 'y',
-  align: 'flex-start flex-start',
+  align: 'stretch flex-start',
   gap: 'Y',
   padding: 'A',
-  round: 'Z',
-  theme: 'surface',
-  border: '1px solid neutral.2',
-  minWidth: '11em',
-  display: (el, s) => (s.screen === 'playing' ? 'flex' : 'none'),
+  width: 'rail',
+  round: 'B',
+  theme: 'glass',
+  border: '1px solid white.12',
+  shadow: 'glass',
+  backdropFilter: 'blur(1.1rem)',
+  display: (el, s) =>
+    s.root.screen === 'playing' && s.root.phase !== 'intro' && s.root.phase !== 'ended'
+      ? 'flex'
+      : 'none',
+
+  state: { open: true },
 
   HistoryHead: {
     tag: 'button',
@@ -16,30 +25,31 @@ export const HistoryPanel = {
     gap: 'A',
     width: '100%',
     background: 'transparent',
+    color: 'white',
     border: 'none',
     cursor: 'pointer',
     padding: '0',
     ':focus-visible': { outline: '2px solid currentColor', outlineOffset: '2px' },
-    onClick: (e, el, s) => {
-      const open = s.historyOpen !== false
-      s.update({ historyOpen: !open })
-    },
+    onClick: (e, el, s) => s.toggle('open'),
 
     HistoryTitle: {
       tag: 'span',
       text: '{{ historyTitle | polyglot }}',
       fontSize: 'Z',
-      fontWeight: '600',
+      fontWeight: '700',
       letterSpacing: 'X',
       textTransform: 'uppercase',
-      theme: 'muted'
+      theme: 'onVideoMuted'
     },
 
     HistoryChevron: {
       tag: 'span',
-      text: (el, s) => (s.historyOpen !== false ? '▾' : '▸'),
+      text: '▾',
       fontSize: 'Z',
-      theme: 'muted'
+      theme: 'onVideoMuted',
+      transition: 'A defaultBezier',
+      transitionProperty: 'transform',
+      transform: (el, s) => (s.open ? 'rotate(0deg)' : 'rotate(-90deg)')
     }
   },
 
@@ -47,17 +57,14 @@ export const HistoryPanel = {
     flow: 'y',
     align: 'stretch flex-start',
     gap: '0',
-    width: '100%',
-    fontVariantNumeric: 'tabular-nums',
-    display: (el, s) => (s.historyOpen !== false ? 'flex' : 'none'),
+    display: (el, s) => (s.open ? 'flex' : 'none'),
 
     childrenAs: 'state',
     children: (el, s) =>
-      (s.history || [])
+      (s.root.history || [])
         .slice()
         .sort((a, b) => b.roundIndex - a.roundIndex)
         .slice(0, 8),
-
     childExtends: 'HistoryRow'
   },
 
@@ -65,10 +72,8 @@ export const HistoryPanel = {
     tag: 'span',
     text: '{{ historyEmpty | polyglot }}',
     fontSize: 'Z',
-    theme: 'muted',
+    theme: 'onVideoMuted',
     display: (el, s) =>
-      s.historyOpen !== false && !(s.history && s.history.length)
-        ? 'inline'
-        : 'none'
+      s.open && !(s.root.history && s.root.history.length) ? 'inline' : 'none'
   }
 }

@@ -242,6 +242,23 @@ exception. Code that has not been seen running in a browser is not done.**
 This project has already shipped a migration that parsed cleanly and then
 failed on the first real push. Only observed behaviour counts.
 
+### Which Chrome tool to use
+
+Two Chrome MCP servers are installed. They are not interchangeable.
+
+- **`chrome-devtools`** (`mcp__chrome-devtools__*`) — use this for anything
+  with video. It drives a Chrome instance over CDP, and media plays normally
+  (verified: `readyState 4`, real frames, 1280×720).
+- **`claude-in-chrome`** (`mcp__claude-in-chrome__*`) — fine for DOM, console,
+  network and screenshots of static UI. **It cannot play media.** A `<video>`
+  in its tab group stays at `readyState 0 / networkState 2` forever, with no
+  error, for Storage URLs, local files and even blob URLs, while `fetch` of the
+  same URL succeeds. Do not spend time debugging playback there.
+
+The engine survives a dead media element (it re-derives from the wall clock),
+so a game can still be driven to completion in `claude-in-chrome` — but that
+proves the engine, not the video.
+
 ### Required sequence
 
 1. Start the server with portless plus the runner, as above.

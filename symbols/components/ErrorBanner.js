@@ -5,7 +5,9 @@ export const ErrorBanner = {
   padding: 'Y A',
   round: 'Z',
   theme: 'danger',
+  shadow: 'glass',
   fontWeight: '600',
+  animation: 'riseIn .35s ease-out both',
   display: (el, s) => (s.error ? 'flex' : 'none'),
 
   ErrorText: {
@@ -16,12 +18,14 @@ export const ErrorBanner = {
   },
 
   DismissButton: {
-    extends: 'Button',
+    tag: 'button',
     text: '×',
+    fontFamily: 'inherit',
     fontSize: 'B',
     lineHeight: 'A',
     fontWeight: '700',
     background: 'transparent',
+    color: 'white',
     border: 'none',
     padding: 'X Y',
     round: 'Y',

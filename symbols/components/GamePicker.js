@@ -13,6 +13,7 @@ export const GamePicker = {
     gap: 'Y',
     textAlign: 'center',
     maxWidth: '38em',
+    animation: 'riseIn .6s ease-out both',
 
     PickerKicker: {
       tag: 'span',
@@ -21,15 +22,15 @@ export const GamePicker = {
       fontWeight: '700',
       letterSpacing: 'Y',
       textTransform: 'uppercase',
-      color: 'brand'
+      color: 'gold'
     },
 
     PickerTitle: {
       tag: 'h1',
       text: '{{ pickerTitle | polyglot }}',
-      fontSize: 'E',
-      lineHeight: 'E',
-      fontWeight: '800',
+      fontSize: 'G',
+      lineHeight: 'G',
+      fontWeight: '900',
       letterSpacing: '-Y',
       margin: '0'
     },
@@ -50,56 +51,30 @@ export const GamePicker = {
     gap: 'B',
     flexWrap: 'wrap',
     width: '100%',
-    maxWidth: '46em',
+    maxWidth: '52em',
+    animation: 'riseIn .6s ease-out .15s both',
     childExtends: 'GameCard',
 
     BananaCard: {
-      onClick: (e, el, s) => {
-        // Optimistic switch so the stage appears immediately; the engine then
-        // reconciles game/round/history from the server (or surfaces the
-        // failure via state.error).
-        s.update({
-          screen: 'playing',
-          phase: 'preview',
-          game: {
-            slug: 'banana_cut',
-            title: 'Banana Cut',
-            objectiveLine: 'Cut the banana exactly in half',
-            guessMin: -20,
-            guessMax: 20,
-            guessStep: 1,
-            resultUnit: 'g'
-          }
-        })
-        el.call('selectGame', 'banana_cut')
-      },
-
-      CardGlyph: { text: '🍌' },
-      CardTitle: { text: '{{ bananaTitle | polyglot }}' },
-      CardLine: { text: '{{ bananaObjective | polyglot }}' }
+      onClick: (e, el) => el.call('selectGame', 'banana_cut'),
+      Img: { src: '/assets/posters/banana.jpg', alt: (el, s) => s.bananaPosterAlt || '' },
+      CardBody: {
+        CardKicker: { text: '{{ bananaKicker | polyglot }}' },
+        CardTitle: { text: '{{ bananaTitle | polyglot }}' },
+        CardLine: { text: '{{ bananaObjective | polyglot }}' },
+        CardMeta: { RangeNote: { text: '{{ bananaRange | polyglot }}' } }
+      }
     },
 
     WaterCard: {
-      onClick: (e, el, s) => {
-        s.update({
-          screen: 'playing',
-          phase: 'preview',
-          game: {
-            slug: 'water_200g',
-            title: 'Water Pour',
-            objectiveLine: 'Pour exactly 200 g of water',
-            guessMin: -20,
-            guessMax: 20,
-            guessStep: 1,
-            resultUnit: 'g'
-          }
-        })
-        el.call('selectGame', 'water_200g')
-      },
-
-      CardGlyph: { text: '💧' },
-      CardTitle: { text: '{{ waterTitle | polyglot }}' },
-      CardLine: { text: '{{ waterObjective | polyglot }}' }
+      onClick: (e, el) => el.call('selectGame', 'water_200g'),
+      Img: { src: '/assets/posters/water.jpg', alt: (el, s) => s.waterPosterAlt || '' },
+      CardBody: {
+        CardKicker: { text: '{{ waterKicker | polyglot }}' },
+        CardTitle: { text: '{{ waterTitle | polyglot }}' },
+        CardLine: { text: '{{ waterObjective | polyglot }}' },
+        CardMeta: { RangeNote: { text: '{{ waterRange | polyglot }}' } }
+      }
     }
   },
 

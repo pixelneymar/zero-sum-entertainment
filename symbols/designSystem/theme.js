@@ -1,7 +1,7 @@
 export default {
   document: {
     '@light': { background: 'white', color: 'black' },
-    '@dark': { background: 'black', color: 'white' }
+    '@dark': { background: 'ink', color: 'white' }
   },
 
   surface: {
@@ -12,6 +12,35 @@ export default {
   muted: {
     '@light': { color: 'black+35' },
     '@dark': { color: 'white-35' }
+  },
+
+  // Translucent broadcast panel over video. Identical in both schemes because
+  // the footage under it is always dark.
+  glass: {
+    '@light': { background: 'steel.62', color: 'white' },
+    '@dark': { background: 'steel.62', color: 'white' }
+  },
+
+  // Glass panel after LOCK — denser, colder, nothing moves.
+  glassLocked: {
+    '@light': { background: 'ink.86', color: 'white' },
+    '@dark': { background: 'ink.86', color: 'white' }
+  },
+
+  // Secondary text over video.
+  onVideoMuted: {
+    '@light': { color: 'haze' },
+    '@dark': { color: 'haze' }
+  },
+
+  chip: {
+    '@light': { background: 'white.08', color: 'white' },
+    '@dark': { background: 'white.08', color: 'white' }
+  },
+
+  chipActive: {
+    '@light': { background: 'white', color: 'black' },
+    '@dark': { background: 'white', color: 'black' }
   },
 
   primary: {
@@ -31,7 +60,7 @@ export default {
   },
 
   locked: {
-    '@light': { background: 'black', color: 'white' },
+    '@light': { background: 'white', color: 'black' },
     '@dark': { background: 'white', color: 'black' }
   }
 }

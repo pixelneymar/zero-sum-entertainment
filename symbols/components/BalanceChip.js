@@ -3,25 +3,28 @@ export const BalanceChip = {
   align: 'baseline center',
   gap: 'Y',
   padding: 'Y A',
-  round: 'Z',
-  theme: 'surface',
-  border: '1px solid neutral.2',
+  round: 'C',
+  theme: 'glass',
+  border: '1px solid white.12',
+  shadow: 'glass',
+  backdropFilter: 'blur(1.1rem)',
   fontVariantNumeric: 'tabular-nums',
+  whiteSpace: 'nowrap',
 
   BalanceLabel: {
     tag: 'span',
     text: '{{ balanceLabel | polyglot }}',
     fontSize: 'Z',
-    fontWeight: '600',
+    fontWeight: '700',
     letterSpacing: 'X',
     textTransform: 'uppercase',
-    theme: 'muted'
+    theme: 'onVideoMuted'
   },
 
   BalanceValue: {
     tag: 'span',
     text: (el, s) => (s.balance ?? 0).toLocaleString('en-US'),
-    fontSize: 'A2',
+    fontSize: 'B',
     fontWeight: '800',
     letterSpacing: '-X'
   },
@@ -30,6 +33,6 @@ export const BalanceChip = {
     tag: 'span',
     text: '{{ chipsUnit | polyglot }}',
     fontSize: 'Z',
-    theme: 'muted'
+    theme: 'onVideoMuted'
   }
 }
