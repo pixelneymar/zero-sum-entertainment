@@ -7,9 +7,12 @@
 --
 -- Contents:
 --   1. the two launch games
---   2. public.dev_create_round() - schedules a round relative to the server
+--   2. public.round_scripts - the scripted takes from docs/rounds.md, read
+--      by public.ws_schedule_round() (supabase/migrations/
+--      20260826193732_workspace_analytics.sql) to create real rounds
+--   3. public.dev_create_round() - schedules a round relative to the server
 --      clock and records its result, so a live round can be created on demand
---   3. one live round per game, so a fresh database is immediately playable
+--   4. one live round per game, so a fresh database is immediately playable
 --
 -- Not seeded: profiles, bets and chip_ledger. Profiles key off auth.uid() and
 -- are created by public.ensure_profile() on first sign-in. Chips are only ever
@@ -64,7 +67,38 @@ on conflict (slug) do update
 
 
 -- ---------------------------------------------------------------------------
--- 2. public.dev_create_round()
+-- 2. public.round_scripts
+--
+-- The scripted takes from docs/rounds.md, read from the footage frame by
+-- frame. `result_value` is what the engine acts on; `readings` are the raw
+-- scale text as printed in the doc, kept for display only.
+--
+-- banana_cut: result = left scale - right scale, in grams.
+-- water_200g: result = scale reading - 200, in grams.
+-- ---------------------------------------------------------------------------
+
+insert into public.round_scripts (
+  game_id, round_index,
+  video_bet_open_s, video_reveal_s, video_pause_s,
+  result_value, readings
+)
+values
+  -- banana_cut (docs/rounds.md "banana - 55.1 s")
+  ('b0000000-0000-4000-8000-000000000001', 1, 20, 36, 37, -13, array['82 g', '95 g']),
+  ('b0000000-0000-4000-8000-000000000001', 2, 38, 54, 55, -15, array['79 g', '94 g']),
+  -- water_200g (docs/rounds.md "water - 49.8 s")
+  ('b0000000-0000-4000-8000-000000000002', 1, 17, 30, 31, -39, array['161 g']),
+  ('b0000000-0000-4000-8000-000000000002', 2, 32, 48, 49, -26, array['174 g'])
+on conflict (game_id, round_index) do update
+  set video_bet_open_s = excluded.video_bet_open_s,
+      video_reveal_s   = excluded.video_reveal_s,
+      video_pause_s    = excluded.video_pause_s,
+      result_value     = excluded.result_value,
+      readings         = excluded.readings;
+
+
+-- ---------------------------------------------------------------------------
+-- 3. public.dev_create_round()
 --
 -- A development helper. It is defined HERE and not in a migration on purpose:
 -- it writes rounds and results directly, which no production path may do.
@@ -175,7 +209,7 @@ grant execute on function public.dev_create_round(
 
 
 -- ---------------------------------------------------------------------------
--- 3. One live round per game
+-- 4. One live round per game
 --
 -- Betting opens 5 s from now and runs for 45 s, so a reset is immediately
 -- playable. Re-run either call to get a fresh live round; round_index

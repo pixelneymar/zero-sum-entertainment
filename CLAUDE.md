@@ -315,6 +315,25 @@ supabase storage cp --experimental symbols/assets/videos/banana.mp4 ss:///videos
 Round timings and results are in `docs/rounds.md`. They were read from the
 footage frame by frame. If a video is re-cut, re-verify every result.
 
+## Workspace dashboard (`/workspace`)
+
+Staff-facing analytics and management console. Spec: `docs/workspace.md`.
+
+- Same authority model as the game: it renders what the source returns and
+  never computes a payout itself.
+- Two sources behind one interface — `demo` (the engine's localStorage store
+  `zse_demo_store`) and `server` (the `ws_*` RPCs). Auto-selected; badge shown.
+- **Guesses are sealed until `result_visible_at`, for staff too.** Enforced in
+  SQL for `server`, in the adapter for `demo`. Do not "fix" this by showing
+  them earlier.
+- Management writes are `SECURITY DEFINER` RPCs that `raise` unless
+  `public.is_staff()`. In demo they act on the local store only.
+- Components are prefixed `Ws`. Charts are inline SVG — load the `dataviz`
+  skill before touching one.
+- Test it like everything else: Chrome, every view, screenshots, console clean.
+  Use `chrome-devtools`, not `claude-in-chrome`, if the test needs a game
+  played first (video).
+
 ## Project hygiene
 
 - `videos/` is gitignored. The `.mov` files are 146 MB and must never enter git.

@@ -13,6 +13,8 @@ Zero Sum Entertainment — a betting layer over short physical-challenge videos.
 | [`architecture.md`](architecture.md) | Symbols + Supabase mapping, realtime, video sync. |
 | [`roadmap.md`](roadmap.md) | Phased delivery and exit criteria. |
 | [`decisions.md`](decisions.md) | Why things are this way. What is still open. |
+| [`rounds.md`](rounds.md) | Round scripts and results, read from the footage frame by frame. |
+| [`workspace.md`](workspace.md) | The `/workspace` analytics and management dashboard. |
 | [`reference-crowdflip.md`](reference-crowdflip.md) | The reference engine, extracted. |
 | [`archive/spec-v0.1.md`](archive/spec-v0.1.md) | The original single-file demo spec. |
 
