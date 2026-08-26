@@ -57,6 +57,33 @@ supabase migration list         # compare local and remote
 supabase db push                # ASK FIRST
 ```
 
+### Writing migrations: two traps
+
+**Order by dependency.** PostgreSQL validates the body of a `LANGUAGE sql`
+function when you create it. The tables it reads must already exist. The
+first push of the initial migration failed this way (`42P01` at statement 6)
+because `is_staff()` was defined before `public.staff`. Do not hide this with
+`LANGUAGE plpgsql` or `check_function_bodies = off`. Fix the order.
+
+**`set search_path = ''` and extensions.** All existing functions pin
+`search_path` to the empty string. This is deliberate and is stronger than
+`public, pg_temp`, because nothing resolves unqualified. Keep it. Schema-
+qualify every reference (`public.staff`, `auth.uid()`).
+
+`pg_catalog` is always searched, so `now()` and `gen_random_uuid()` still
+work. Postgres 13 moved `gen_random_uuid()` into core and this project is on
+17.6.1.
+
+Extension functions do NOT work under an empty search path. Supabase puts
+them in the `extensions` schema. `uuid_generate_v4()`, `crypt()`,
+`gen_salt()`, and pgcrypto or pg_trgm functions will fail to resolve.
+
+Operators are the worst case, because normal syntax cannot qualify them.
+`a % b` must be written `a OPERATOR(extensions.%) b`.
+
+If a new function needs an extension, set `search_path = 'extensions'` for
+that one function. Do not revert to `public`.
+
 ### Row Level Security is mandatory
 
 A Supabase table without RLS is readable and writable by anyone holding the
