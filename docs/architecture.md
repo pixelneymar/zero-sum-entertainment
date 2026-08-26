@@ -27,7 +27,7 @@ The client renders. It never decides.
 |---|---|
 | What round is it? | Server timestamps |
 | Is betting open? | Database, at insert time |
-| What is the result? | `round_results`, after `reveal_at` |
+| What is the result? | `round_results`, after `result_visible_at` |
 | Did I win, and how much? | `settle_round()` |
 | What is my balance? | `chip_ledger` |
 
@@ -86,15 +86,21 @@ const serverNow = () => Date.now() + offset
 Re-measure on reconnect. Drive every countdown from `serverNow()`.
 
 This only makes the display honest. It is **not** a guarantee — the guarantee
-is the RLS check in `integrity.md` §3. A client whose clock says betting is
-open will still be rejected by the database if it is not.
+is the `clock_timestamp()` check inside `place_bet()`, `integrity.md` §3. A
+client whose clock says betting is open will still be rejected by the
+database if it is not.
 
 ## 3. Realtime
 
 Two channels per round.
 
-**Aggregates — broadcast.** Player count and pot. From `round_stats`, which
-carries no guesses. Safe to send to everyone.
+**Aggregates — broadcast.** Player count and pot. From `round_stats()`, a
+`SECURITY DEFINER` function that returns only `count()` and `sum(stake)` —
+never a guess row. (Earlier drafts used a `security_invoker` view; run under
+the caller's own RLS, that aggregate is subject to the same policy as any
+other query on `bets` — own bet only, before reveal — so `count()` would
+have returned `1` for every caller. See `decisions.md`, "Corrected".) Safe
+to send to everyone.
 
 **Own bet — postgres_changes, filtered.** `filter: user_id=eq.<uid>`. RLS
 applies to realtime too, so another user's bet cannot arrive even if the filter
@@ -138,11 +144,12 @@ state is derived (`integrity.md` §2).
 future round. Idempotent via `unique (game_id, round_index)`.
 
 **Settlement sweep** — every 30 s. Calls `settle_round()` for rounds past
-`reveal_at` with `settled_at IS NULL`. Idempotent by construction, so overlap
-is harmless.
+`result_visible_at` with `settled_at IS NULL`. Idempotent by construction, so
+overlap is harmless.
 
 If both jobs stop: existing rounds still lock correctly, results still hide
-until `reveal_at`, and payouts are late but not lost. Degradation is graceful.
+until `result_visible_at`, and payouts are late but not lost. Degradation is
+graceful.
 
 ## 6. Bots
 
@@ -154,7 +161,9 @@ that can bet after the lock destroys the product's only claim. The bot writer
 gets no exemption from the lock.
 
 Arrival curve, herd behaviour and crowd sizing are extracted from Crowdflip in
-`reference-crowdflip.md`.
+`reference-crowdflip.md`. The guess distribution itself — normal-ish around
+0, stddev 8, clamped, a few outliers — is specified in `spec.md` §8.5, not
+here: it is a payout-affecting parameter, not a presentation one.
 
 Disclosure is an open product question — `spec.md` §8.4, `decisions.md`.
 

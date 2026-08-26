@@ -1,6 +1,6 @@
 # Zero Sum Entertainment — Product Specification v1.0
 
-Supersedes `spec.md` v0.1 (the single-file pitch demo).
+Supersedes `docs/archive/spec-v0.1.md` (the single-file pitch demo).
 
 v0.1 described one self-contained HTML file with scripted results and fake
 crowds. This version keeps **all of the business logic** from v0.1 and drops
@@ -66,6 +66,34 @@ millisecond late is rejected, not accepted quietly.
 In v1.0 the state is **derived from server timestamps**, never stored and never
 taken from a client clock. See `integrity.md` §2.
 
+The schema (`data-model.md` §3) stores five timestamps, not one per state:
+`preview_starts_at`, `betting_opens_at`, `betting_closes_at`,
+`result_visible_at`, `results_end_at`. The four durations in the table above
+are not independent constants; they are derivable from those five columns
+and the round's video offsets:
+
+```
+PREVIEW  duration = betting_opens_at   − preview_starts_at   =  5 s
+BETTING  duration = betting_closes_at  − betting_opens_at    = 25 s
+RESULTS  duration = results_end_at     − result_visible_at   =  8 s
+LOCKED + REVEAL    = result_visible_at − betting_closes_at   = variable, video-dependent
+```
+
+`result_visible_at` is **not** `betting_closes_at + 5 s`. It is the
+wall-clock instant playback reaches the frame that shows the result:
+
+```
+result_visible_at = betting_closes_at + (video_reveal_s − video_bet_open_s)
+```
+
+Gating the result on a fixed 5 s offset instead of this value publishes the
+answer before the video shows it — by as much as ~29 s on a typical round.
+`result_visible_at`, not a fixed offset, is what `round_results`'s RLS
+policy gates on. See `integrity.md` §5.1. Within `[betting_closes_at,
+result_visible_at)` the client still shows LOCKED for a fixed first 5 s and
+REVEAL for the remainder; that split is a client-side convention, not a
+database gate — nothing security-relevant happens at that boundary.
+
 ## 4. Betting
 
 - One bet per user per round. No second bet, no edit, no cancel.
@@ -87,11 +115,16 @@ all included**, so the real winner count can exceed `N`.
 The payout engine is defined exactly in `game-rules.md`. In summary:
 
 ```
-pot        = player_count × 20
-prize      = pot × 0.95            (5% rake, fixed and shown before betting)
-multiplier = 0.95 / (winner_count / player_count)
-payout     = 20 × multiplier
+pot                = player_count × 20
+prize              = pot × 0.95            (5% rake, fixed and shown before betting)
+payout_per_winner  = floor(prize / winner_count)
+multiplier         = payout_per_winner / 20
 ```
+
+`multiplier` is computed **after** the floor, from what a winner actually
+receives. `0.95 / (winner_count / player_count)` is the pre-rounding ideal —
+it is not what gets paid, and it is not what the multiplier displays. See
+`game-rules.md` §1, §4, §4.1.
 
 The 5% rake is disclosed in the UI before betting opens. A market that hides
 its rake is not honest, whatever else it does.
@@ -143,6 +176,18 @@ a product with real users, they must be labelled as simulated in the UI. This
 is a product decision, not a technical one, and it is recorded as open in
 `decisions.md`.
 
+**8.5 The bot guess distribution is not optional.** Whatever the disclosure
+decision, v0.1 §6 specified how bot guesses are drawn and v1.0's docs dropped
+that without a replacement. Restored here, unchanged: bot guesses are
+**normal-ish around 0, standard deviation 8, clamped to the game's
+`guess_min .. guess_max`, with a few outliers.** This is not cosmetic. In a
+nearest market, the spread of guesses around the result value is what
+determines `winner_count` — and `winner_count` sets every multiplier in
+`game-rules.md` §4. An unspecified guess distribution is an unspecified
+payout curve. See `architecture.md` §6 for how bots are written, and
+`reference-crowdflip.md` for the arrival curve and herd behaviour that still
+port.
+
 ## 9. Out of scope at launch
 
 - Real money in any form. Deposits, withdrawals, cash-out.
@@ -158,9 +203,9 @@ Behavioural, testable, and mostly inherited from v0.1.
 - [ ] A bet submitted after `betting_closes_at` is **rejected by the database**,
       not by the UI. Provable with a direct API call that bypasses the client.
 - [ ] Player count and pot are identical before and after LOCKED.
-- [ ] The result value is **unreadable** through the API before `reveal_at`.
-      Provable with a direct API call.
-- [ ] Another user's guess is unreadable before `reveal_at`.
+- [ ] The result value is **unreadable** through the API before
+      `result_visible_at`. Provable with a direct API call.
+- [ ] Another user's guess is unreadable before `result_visible_at`.
 - [ ] The result shown always matches the video frame.
 - [ ] Settlement runs exactly once per round, even if invoked twice.
 - [ ] Chip balances equal the sum of the ledger at all times.

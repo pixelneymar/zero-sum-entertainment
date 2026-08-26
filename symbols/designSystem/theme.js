@@ -18,5 +18,20 @@ export default {
     background: 'brand',
     color: 'white',
     ':hover': { background: 'brand+8' }
+  },
+
+  danger: {
+    '@light': { background: 'ember', color: 'white' },
+    '@dark': { background: 'ember', color: 'white' }
+  },
+
+  success: {
+    '@light': { background: 'mint', color: 'white' },
+    '@dark': { background: 'mint', color: 'white' }
+  },
+
+  locked: {
+    '@light': { background: 'black', color: 'white' },
+    '@dark': { background: 'white', color: 'black' }
   }
 }

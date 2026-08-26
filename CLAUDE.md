@@ -190,14 +190,129 @@ user.email  levantavadze23@gmail.com
 Push needs `gh auth login`. That command needs a real terminal. Ask the owner
 to run it. Do not try to run it from a tool call.
 
+
+---
+
+## The product
+
+A betting layer over short physical-challenge videos. Users bet on **how far
+off** an attempt lands. Closest 10% split the pot, 5% rake.
+
+Read `docs/README.md` first. Read `docs/integrity.md` before changing anything
+that touches bets, rounds, results, or chips.
+
+**The product's only claim: once betting closes, nothing changes.** Everything
+else is entertainment. This one has to be true.
+
+## Running the project
+
+Always use portless plus the smbls runner. Do not use raw port numbers.
+
+```bash
+export PATH="$HOME/.local/bin:$PATH"
+cd ~/Desktop/zero-sum-entertainment
+
+# once per machine — the proxy needs an unprivileged port because sudo needs a password here
+portless proxy start --port 1355 --https
+
+# then, to run the app
+portless zero-sum sh -c 'smbls runner serve --no-audit -p $PORT'
+```
+
+App URL: **https://zero-sum.localhost:1355**
+
+The `sh -c` wrapper is required and is not optional. portless picks a random
+port and exports it as `$PORT`, but `smbls runner serve` takes its port from
+`symbols.json` (`port: 1234`) and ignores the environment. Without `-p $PORT`
+the proxy points at a port nothing is listening on and every request 502s. The
+single quotes matter — `$PORT` must expand inside the child, not in your shell.
+
+The TLS certificate is self-signed and could not be added to the system trust
+store (that needs sudo). Browsers show a warning. `curl` needs `-k`. Run
+`portless trust` if you want to fix it interactively.
+
+The runner works without a Symbols login. `smbls push` and `smbls fetch` do not.
+
+## Testing — MANDATORY for every implementation task
+
+**Every implementation task must end with a browser test in Chrome. No
+exception. Code that has not been seen running in a browser is not done.**
+
+"It compiles", "the syntax is valid", and "the SQL parses" are not evidence.
+This project has already shipped a migration that parsed cleanly and then
+failed on the first real push. Only observed behaviour counts.
+
+### Required sequence
+
+1. Start the server with portless plus the runner, as above.
+2. Drive Chrome with the `claude-in-chrome` MCP tools. Invoke the
+   `claude-in-chrome` skill first, then `tabs_context_mcp`, then navigate.
+3. Take a screenshot. Look at it. A blank page that returns HTTP 200 is a
+   failure.
+4. Read the console with `read_console_messages`. Any uncaught error fails the
+   task.
+5. Exercise the actual behaviour — click, select a guess, place a bet. Do not
+   only load the page.
+6. Report what you SAW, not what you expect. If it did not render, say so.
+
+### What every feature must prove
+
+- The real output, not a placeholder or a mock.
+- Correct numbers. Compare against `docs/game-rules.md` §5 worked examples.
+- Errors surface visibly. A rejected late bet must be shown to the user, not
+  swallowed.
+
+### Integrity tests are not optional
+
+These prove the product works. They must run against the LIVE api with curl,
+bypassing the client entirely — a guarantee enforced only in JavaScript is not
+a guarantee:
+
+- a bet inserted after `betting_closes_at` is REJECTED by the database
+- `round_results` returns zero rows before `reveal_at`
+- another user's `guess` is unreadable before `reveal_at`
+- `settle_round` run twice writes one set of ledger rows
+- `sum(chip_ledger.amount)` equals `balances.balance` after every settlement
+
+Tests live in `tests/`. Run them before declaring any task complete.
+
+## Project hygiene
+
+- `videos/` is gitignored. The `.mov` files are 146 MB and must never enter git.
+- Never commit a real key. The Supabase **anon** key is public by design and may
+  appear in client code. The **service_role** key must never appear in
+  `symbols/`, in a commit, or in a report.
+- Delete code that a change makes obsolete. Do not leave dead components.
+- One migration per logical change. Never edit an applied migration; add a new
+  one.
+
+## Division of authority — do not violate
+
+The client renders. It never decides.
+
+| Question | Answered by |
+|---|---|
+| Is betting open? | The database, at insert time |
+| What is the result? | `round_results`, after `reveal_at` |
+| Did I win, and how much? | `settle_round()` |
+| What is my balance? | `chip_ledger` |
+
+A guarantee that is not an RLS policy or a database constraint does not exist.
+Client checks are courtesy. See `docs/integrity.md` §1.
+
 ---
 
 ## Rules
 
 1. Export `PATH` before every tool call.
-2. Never run `supabase db push` without permission.
-3. Never create a table without RLS and policies.
-4. Never commit `.env`. Only `.env.example` is tracked.
-5. Never put a real key in a file, a commit, or a report.
-6. Read `get_project_rules` before writing Symbols components.
-7. Do not try to install the Symbols CLI.
+2. **Test every implementation in Chrome before calling it done.** Screenshot
+   it, read the console, exercise the behaviour. See "Testing" above.
+3. Run the project with `portless` plus `smbls runner serve`. Never a raw port.
+4. Never run `supabase db push` without permission.
+5. Never create a table without RLS and policies.
+6. Never commit `.env`, `videos/`, or any real key. The anon key is public and
+   is fine in client code; the service_role key is not.
+7. Read `get_sdk_reference` before writing Symbols components. Verify with
+   `audit_component`. (`get_project_rules` is broken server-side.)
+8. Report what you observed, never what you expect. If it did not render, say
+   so.

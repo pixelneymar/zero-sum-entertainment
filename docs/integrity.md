@@ -20,33 +20,58 @@ that user. Nothing may depend on the client behaving.
 | Symbols client | **No** | Presentation only. Never a guarantee. |
 | Edge Function | Partly | Orchestration. Can be bypassed by calling PostgREST directly. |
 | **RLS policy** | **Yes** | The security boundary. Cannot be bypassed by any anon/authenticated caller. |
-| **Constraint / trigger** | **Yes** | The invariant. Holds even against `service_role`. |
+| **Constraint / trigger / SECURITY DEFINER function** | **Yes** | The invariant. Holds even against `service_role`'s absence of an RLS check, because the check is inside the function body itself. |
 
-Rule: **a guarantee that is not expressed as an RLS policy or a database
-constraint does not exist.** Client checks are courtesy. Edge Function checks
-are convenience. Only the database is authoritative.
+Rule: **a guarantee that is not expressed as an RLS policy, a database
+constraint, or a check inside a `SECURITY DEFINER` function does not exist.**
+Client checks are courtesy. Edge Function checks are convenience. Only the
+database is authoritative.
 
 ## 2. Round state is derived, never stored
 
-There is **no `state` column** on `rounds`. State is computed from timestamps:
+There is **no `state` column** on `rounds`. State is computed from five
+timestamps, not stored:
 
 ```sql
 case
-  when now() <  r.betting_opens_at  then 'preview'
-  when now() <  r.betting_closes_at then 'betting'
-  when now() <  r.reveal_at         then 'locked'
-  when now() <  r.results_end_at    then 'reveal'
-  else                                   'results'
+  when clock_timestamp() <  r.preview_starts_at  then 'scheduled'
+  when clock_timestamp() <  r.betting_opens_at   then 'preview'
+  when clock_timestamp() <  r.betting_closes_at  then 'betting'
+  when clock_timestamp() <  r.result_visible_at  then 'locked'
+  when clock_timestamp() <  r.results_end_at     then 'results'
+  else                                                 'ended'
 end
 ```
 
-Three reasons this is the right design.
+`preview_starts_at` and `result_visible_at` are explained in `data-model.md`
+§3. Two notes on the mapping above:
 
-**It removes the race.** A stored state needs a writer. Between "betting
-closed" in fact and `UPDATE rounds SET state='locked'` in practice there is a
-window. In that window a late bet is accepted. Derived state has no window —
-`now() < betting_closes_at` is evaluated inside the same transaction as the
-insert.
+- `'scheduled'` exists so a round created ahead of time by the round-creation
+  cron (`architecture.md` §5) does not display a live PREVIEW countdown long
+  before it should.
+- The client-visible LOCKED and REVEAL phases from `spec.md` §3 are both
+  inside the single `'locked'` branch above, split by a fixed 5-second
+  client-side convention, not a second database timestamp. Nothing
+  security-relevant happens at that internal boundary — the only two gates
+  that matter are `betting_closes_at` (§3 below) and `result_visible_at`
+  (§5.1).
+
+Three reasons derived state is the right design.
+
+**It removes the race — using `clock_timestamp()`, not `now()`.** A stored
+state needs a writer. Between "betting closed" in fact and `UPDATE rounds SET
+state='locked'` in practice there is a window. In that window a late bet is
+accepted. Derived state has no such window, but only if every comparison uses
+`clock_timestamp()`. `now()` is `transaction_timestamp()` — it is fixed at
+the **start** of the calling transaction, not evaluated live. A client (or a
+long-running function call) that opens its transaction before
+`betting_closes_at` would see every `now()` comparison inside that
+transaction evaluate against that earlier instant, even if the actual insert
+happens after the close — `now()` would not remove the window, it would just
+move it from "the gap before an UPDATE" to "the gap before a COMMIT."
+`clock_timestamp()` is re-evaluated on every call, including inside a
+transaction that has been open for a while, so it has no such gap. See
+`decisions.md` D1.
 
 **It removes a scheduler dependency for correctness.** If a cron job dies,
 derived state stays correct. Stored state would freeze and betting would stay
@@ -62,47 +87,108 @@ Scheduled work is still needed, but only to **create** future rounds and
 
 ## 3. The lock
 
-Enforced in the RLS `WITH CHECK` on `bets` insert:
+`bets` has **no INSERT policy.** The only way to write a bet is through
+`public.place_bet(p_round_id uuid, p_guess integer)`, a `SECURITY DEFINER`
+function:
 
 ```sql
-create policy "bets: only while betting is open"
-on public.bets for insert to authenticated
-with check (
-  user_id = (select auth.uid())
-  and exists (
-    select 1 from public.rounds r
-    where r.id = round_id
-      and now() >= r.betting_opens_at
-      and now() <  r.betting_closes_at
-  )
-);
+create or replace function public.place_bet(p_round_id uuid, p_guess integer)
+returns public.bets
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_round   public.rounds;
+  v_game    public.games;
+  v_user    uuid := auth.uid();
+  v_balance integer;
+  v_bet     public.bets;
+begin
+  perform pg_advisory_xact_lock(hashtextextended(p_round_id::text, 0));
+
+  select * into v_round from public.rounds where id = p_round_id;
+  select * into v_game  from public.games  where id = v_round.game_id;
+
+  if clock_timestamp() < v_round.betting_opens_at
+     or clock_timestamp() >= v_round.betting_closes_at then
+    raise exception 'round % is not open for betting', p_round_id;
+  end if;
+
+  if p_guess < v_game.guess_min or p_guess > v_game.guess_max then
+    raise exception 'guess % outside % .. %',
+      p_guess, v_game.guess_min, v_game.guess_max;
+  end if;
+
+  select balance into v_balance from public.balances where user_id = v_user;
+  if v_balance is null or v_balance < 20 then
+    raise exception 'insufficient balance';
+  end if;
+
+  insert into public.bets (round_id, user_id, guess, stake)
+  values (p_round_id, v_user, p_guess, 20)
+  returning * into v_bet;
+
+  insert into public.chip_ledger (user_id, round_id, kind, amount)
+  values (v_user, p_round_id, 'stake', -20);
+
+  return v_bet;
+end;
+$$;
+
+revoke execute on function public.place_bet(uuid, integer) from public;
+grant execute on function public.place_bet(uuid, integer) to authenticated;
 ```
+
+`bets` itself carries only a SELECT policy (§5.2) and the table constraint
+`check (stake = 20)`. There is no INSERT policy, no UPDATE policy, no DELETE
+policy for any role below `service_role`.
+
+Why a function, not a policy: an RLS policy can only constrain the columns
+of the row being inserted. It cannot also write the matching `chip_ledger`
+debit in the same statement. Without that debit, PostgREST would let an
+anon-key caller insert a bet directly through `bets` and never pay for it — a
+free bet with a real payout. `place_bet` inserts the bet and the stake debit
+in one transaction, or neither.
 
 Properties:
 
-- `now()` is the **database** clock. Client clocks are never consulted, so
-  clock skew and tampering are irrelevant.
-- The check runs inside the insert transaction. There is no gap between
-  checking and writing.
-- A late bet **errors**. It is not clamped, queued or quietly dropped. The
-  user is told.
-- There is **no UPDATE and no DELETE policy** on `bets`. A placed bet is
-  immutable. Not even its owner can change it.
-- `unique (round_id, user_id)` enforces one bet per user at the schema level.
+- `clock_timestamp()`, not `now()`. See §2 and `decisions.md` D1 for why —
+  `now()` is fixed at transaction start, so a client that opens its
+  transaction early can still land an insert after the real close.
+- The check runs inside the same transaction as the insert and the ledger
+  debit. There is no gap between checking and writing.
+- A late call **errors**. The bet is not clamped, queued or quietly dropped.
+  The user is told.
+- `unique (round_id, user_id)` enforces one bet per user at the schema
+  level, independent of the function logic.
+- `check (stake = 20)` on `bets`, and the hardcoded `20` inside the
+  function, are redundant on purpose — the constraint holds even if the
+  function is ever miswritten or replaced.
+- `pg_advisory_xact_lock(hashtextextended(p_round_id::text, 0))` serializes
+  every `place_bet` call for a round against `settle_round`'s claim on the
+  same round. See §4.
 
-Acceptance test: place a bet by direct API call at `betting_closes_at + 50 ms`
-and confirm a policy violation. This must be in the test suite, because it is
-the single most important behaviour in the product.
+Acceptance test: call `place_bet` by direct API call at `betting_closes_at +
+50 ms` and confirm it raises, with no bet row and no ledger row written. Also
+confirm a **direct INSERT into `bets`**, bypassing `place_bet` entirely, is
+rejected by PostgREST at any time — there is no INSERT policy to satisfy.
+Both must be in the test suite; the first is the single most important
+behaviour in the product, and the second is what stops a free bet.
 
-## 4. Settlement runs exactly once
+## 4. Settlement runs exactly once, and does not race a landing bet
 
-Settlement credits chips. Running it twice pays twice.
+Settlement credits chips. Running it twice pays twice. Running it while a bet
+for the same round is still committing can pay out for a smaller crowd than
+actually played. These are two different problems, solved by two different
+mechanisms — do not conflate them.
 
-The guard is a conditional claim, not a check-then-act:
+**Double-settlement** is prevented by an idempotent claim, not a
+check-then-act:
 
 ```sql
 update public.rounds
-   set settled_at = now()
+   set settled_at = clock_timestamp()
  where id = p_round_id
    and settled_at is null
 returning id into v_claimed;
@@ -113,14 +199,44 @@ end if;
 ```
 
 The `UPDATE ... WHERE settled_at IS NULL` is atomic. Two concurrent callers
-cannot both claim the round: one updates the row, the other matches zero rows.
-A `SELECT` followed by an `IF` would not be safe.
+cannot both claim the round: one updates the row, the other matches zero
+rows. A `SELECT` followed by an `IF` would not be safe. **This solves
+double-settlement only.** On its own it says nothing about which bets
+settlement's snapshot sees.
+
+**The bet race** is a separate problem. `place_bet` checks
+`clock_timestamp() < betting_closes_at` and then, in the same transaction,
+inserts the bet and debits the ledger. Between that check passing and the
+transaction committing, real time keeps moving. If `settle_round` reads
+`bets` while that transaction is still open, under Postgres's normal
+read-committed visibility it will not see the row — and the bet still
+commits a moment later, because its own check already passed. Result: a
+player who is debited, never ranked, never paid, and never refunded. The
+idempotent claim above does not prevent this; it only stops a *second*
+settlement, not a settlement that starts too early relative to an in-flight
+bet.
+
+The fix is a session-level advisory lock, keyed by round, taken at the top of
+**both** `place_bet` and `settle_round`:
+
+```sql
+perform pg_advisory_xact_lock(hashtextextended(p_round_id::text, 0));
+```
+
+Because it is an `_xact_` lock it is held until the transaction ends and
+released automatically on commit or rollback — no explicit unlock, no risk
+of leaving it held after a crash. Whichever function acquires the lock first
+for a given round forces the other to wait until that transaction ends. A
+`place_bet` call that is still mid-transaction therefore blocks
+`settle_round` from proceeding until it commits or rolls back — so
+settlement's snapshot is guaranteed to include every bet that will ever exist
+for that round, and no bet can be debited and then missed.
 
 Settlement is also refused before the result is due:
 
 ```sql
-if now() < v_round.reveal_at then
-  raise exception 'round % is not revealable yet', p_round_id;
+if clock_timestamp() < v_round.result_visible_at then
+  raise exception 'round % result is not visible yet', p_round_id;
 end if;
 ```
 
@@ -138,18 +254,30 @@ and two are solved in the schema.
 whose only read policy is time-gated:
 
 ```sql
-create policy "results: readable only after reveal"
+create policy "results: readable only after the video shows them"
 on public.round_results for select to anon, authenticated
 using (
   exists (select 1 from public.rounds r
-           where r.id = round_id and now() >= r.reveal_at)
+           where r.id = round_id and clock_timestamp() >= r.result_visible_at)
 );
 ```
 
-If `result_value` sat on `rounds`, any client could read the answer during
-BETTING and win every round. Row-level security cannot hide a single column,
-so the column must live in its own row. **This split is load-bearing. Do not
-merge these tables.**
+Why a separate table, and not a column-level `GRANT` on
+`rounds.result_value`: PostgreSQL does have column-level grants, and
+PostgREST honours them — that is not the problem. The problem is that a
+`GRANT` is **static**: set once, true until someone changes it. This
+requirement is **time-varying** — the column must be unreadable before
+`result_visible_at` and readable after, with no code running at that instant
+to flip anything. Only a row-level security *policy* is evaluated per row,
+per query, against the live `clock_timestamp()`. A `GRANT` cannot express
+"readable after this moment"; only a policy predicate can. So the gated value
+has to live somewhere RLS can gate it — its own row, in its own table. **This
+split is load-bearing. Do not merge these tables.**
+
+`result_visible_at` is the wall-clock instant playback reaches the frame that
+shows the result — computed from `video_reveal_s`, not a fixed offset from
+`betting_closes_at`. Gating on a fixed offset instead published the answer
+before the video showed it. See `data-model.md` §3 and `spec.md` §3.
 
 ### 5.2 Other players' guesses — SOLVED
 
@@ -157,17 +285,18 @@ Seeing the crowd's guesses before the lock is a real edge: a late better can
 position just outside the cluster and take a winning slot deliberately.
 
 ```sql
-create policy "bets: own bet always, others only after reveal"
+create policy "bets: own bet always, others only after the video shows the result"
 on public.bets for select to authenticated
 using (
   user_id = (select auth.uid())
   or exists (select 1 from public.rounds r
-              where r.id = round_id and now() >= r.reveal_at)
+              where r.id = round_id and clock_timestamp() >= r.result_visible_at)
 );
 ```
 
-Live pot and player count still work, because they come from an aggregate
-view that exposes **counts only, never guesses**. See `data-model.md` §4.
+Live pot and player count still work, because they come from
+`round_stats()`, a `SECURITY DEFINER` function that returns **counts only,
+never a guess**. See `data-model.md` §4.
 
 ### 5.3 The video — NOT SOLVED BY THE SCHEMA
 
@@ -182,8 +311,9 @@ Options, best first:
    to scrub. This is the only complete fix, and it is where the product wants
    to go anyway.
 2. **Segmented HLS with server-gated segments.** Cut the video into segments.
-   Refuse to serve any segment past the reveal point until `now() >=
-   reveal_at`. Strong, and works with recorded video.
+   Refuse to serve any segment past the reveal point until
+   `clock_timestamp() >= result_visible_at`. Strong, and works with recorded
+   video.
 3. **Signed URLs with time-limited validity.** Weaker — a determined user can
    fetch the moment the URL becomes valid, but they cannot pre-fetch.
 4. **Ship the whole file and accept the risk.** Only acceptable for a pitch
@@ -201,6 +331,10 @@ Balance is **derived**, not stored as an editable number.
 - `balances` is a cache maintained by trigger, for read speed only.
 - The audit query is `sum(amount) from chip_ledger where user_id = ?`. If that
   ever disagrees with `balances`, the cache is wrong and the ledger wins.
+- Every round's `chip_ledger` rows — stakes, payouts, and the `rake` entry to
+  the house account (`data-model.md` §5.1) — sum to exactly zero on their
+  own. That is what makes the ledger auditable evidence rather than a claim
+  `settle_round` merely asserts.
 
 Same argument as the lock: a number nobody can quietly change is worth more
 than a number that is merely correct today.

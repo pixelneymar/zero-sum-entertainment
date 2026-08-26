@@ -1,101 +1,110 @@
 export const main = {
   extends: 'Page',
+  position: 'relative',
   flow: 'y',
-  align: 'flex-start center',
-  gap: 'C',
   width: '100%',
   minHeight: '100vh',
+  overflow: 'hidden',
+  theme: 'document',
 
   metadata: {
-    title: '{{ homeMetaTitle | polyglot }}',
-    description: '{{ homeMetaDescription | polyglot }}'
+    title: '{{ appMetaTitle | polyglot }}',
+    description: '{{ appMetaDescription | polyglot }}'
   },
 
-  SiteHeader: {},
-
-  Hero: {
-    tag: 'section',
+  // ---- start screen -------------------------------------------------------
+  Picker: {
+    display: (el, s) => (s.screen === 'picker' ? 'flex' : 'none'),
     flow: 'y',
-    align: 'flex-start flex-start',
-    gap: 'A',
-    padding: 'C B',
+    align: 'center center',
     width: '100%',
-    maxWidth: '48em',
+    minHeight: '100vh',
+    padding: 'C',
 
-    HeroTitle: {
-      tag: 'h1',
-      text: '{{ heroTagline | polyglot }}',
-      fontSize: 'E',
-      lineHeight: 'E',
-      fontWeight: '700',
-      letterSpacing: '-Y',
-      margin: '0'
-    },
-
-    HeroLead: {
-      tag: 'p',
-      text: '{{ heroLead | polyglot }}',
-      fontSize: 'B',
-      lineHeight: 'C',
-      theme: 'muted',
-      margin: '0'
-    },
-
-    HeroAction: {
-      extends: 'Button',
-      text: '{{ heroAction | polyglot }}',
-      theme: 'primary',
-      padding: 'Z A',
-      round: 'Y',
-      onClick: (e, el) => el.router('/about', el.getRoot())
-    }
+    GamePicker: {}
   },
 
-  Work: {
-    tag: 'section',
-    flow: 'y',
-    align: 'flex-start flex-start',
-    gap: 'B',
-    padding: '0 B',
+  // ---- betting stage ------------------------------------------------------
+  Stage: {
+    display: (el, s) => (s.screen === 'playing' ? 'block' : 'none'),
+    position: 'relative',
     width: '100%',
+    minHeight: '100vh',
 
-    WorkTitle: {
-      tag: 'h2',
-      text: '{{ workTitle | polyglot }}',
-      fontSize: 'C',
-      fontWeight: '600',
-      letterSpacing: '-X',
-      margin: '0'
+    Surface: {
+      tag: 'video',
+      position: 'absolute',
+      inset: '0 0 0 0',
+      width: '100%',
+      height: '100%',
+      objectFit: 'cover',
+      attr: {
+        playsinline: 'true',
+        preload: 'auto',
+        muted: 'true'
+      },
+      src: (el, s) => (s.game ? `/videos/${s.game.slug === 'water_200g' ? 'water' : 'banana'}.mov` : null)
     },
 
-    ShowGrid: {}
-  },
-
-  Contact: {
-    tag: 'section',
-    flow: 'y',
-    align: 'flex-start flex-start',
-    gap: 'A',
-    padding: 'C B',
-    width: '100%',
-    maxWidth: '40em',
-
-    ContactTitle: {
-      tag: 'h2',
-      text: '{{ contactTitle | polyglot }}',
-      fontSize: 'C',
-      fontWeight: '600',
-      letterSpacing: '-X',
-      margin: '0'
+    Scrim: {
+      position: 'absolute',
+      inset: '0 0 0 0',
+      background: 'rgba(0,0,0,.42)'
     },
 
-    ContactLead: {
-      tag: 'p',
-      text: '{{ contactLead | polyglot }}',
-      fontSize: 'A',
-      lineHeight: 'B',
-      theme: 'muted',
-      margin: '0'
+    TopLeft: {
+      position: 'absolute',
+      top: 'B',
+      left: 'B',
+      flow: 'y',
+      gap: 'Y',
+      CrowdCounter: {}
+    },
+
+    TopCentre: {
+      position: 'absolute',
+      top: 'B',
+      left: '50%',
+      transform: 'translateX(-50%)',
+      flow: 'y',
+      align: 'center center',
+      gap: 'Y',
+      TimerChip: {},
+      ObjectiveBanner: {}
+    },
+
+    TopRight: {
+      position: 'absolute',
+      top: 'B',
+      right: 'B',
+      BalanceChip: {}
+    },
+
+    RightRail: {
+      position: 'absolute',
+      top: '30%',
+      right: 'B',
+      HistoryPanel: {}
+    },
+
+    BottomCentre: {
+      position: 'absolute',
+      bottom: 'B',
+      left: '50%',
+      transform: 'translateX(-50%)',
+      flow: 'y',
+      align: 'center center',
+      gap: 'Y',
+      ErrorBanner: {},
+      BetPanel: {}
+    },
+
+    Centre: {
+      display: (el, s) => (s.phase === 'results' ? 'flex' : 'none'),
+      position: 'absolute',
+      inset: '0 0 0 0',
+      align: 'center center',
+      ResultsCard: {}
     }
   }
 }

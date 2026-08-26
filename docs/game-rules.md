@@ -12,13 +12,26 @@ different games. They are the same engine.
 
 ```
 crowdflip : multiplier = 0.95 / share          (share = backers on winning side / total)
-zero sum  : multiplier = payout / stake
-          = (players × 20 × 0.95 / winners) / 20
-          = 0.95 / (winners / players)
-          = 0.95 / share
+zero sum  : multiplier = payout_per_winner / STAKE     (payout_per_winner floored, see §4.1)
 ```
 
-**Identical.** The only difference is which bets are marked as winners.
+**Same shape, not the same number.** Before rounding,
+`payout_per_winner / STAKE` reduces to `0.95 / share`, exactly like
+Crowdflip:
+
+```
+payout_per_winner / STAKE
+  = (players × 20 × 0.95 / winners) / 20
+  = 0.95 / (winners / players)
+  = 0.95 / share
+```
+
+Chips are integers, though, and `prize / winner_count` is rarely whole.
+Once §4.1 floors it, `payout_per_winner / STAKE` and `0.95 / share` diverge
+by the rounding remainder. The displayed multiplier is always the **post-floor**
+value — what a winner actually received divided by what they staked — never
+the pre-rounding ideal. The only difference between the two games is which
+bets are marked as winners.
 
 So the engine splits in two:
 
@@ -78,11 +91,20 @@ intended — a crowded guess pays less.
 pot          = player_count × STAKE
 prize        = pot × (1 − RAKE)
 share        = winner_count / player_count
-multiplier   = (1 − RAKE) / share
 payout_exact = prize / winner_count
 ```
 
-Displayed multiplier: 2 decimal places, e.g. `×4.75`.
+Chips are integers. `payout_exact` is rarely whole, so §4.1 floors it to get
+`payout_per_winner`. **The multiplier is defined from the floored payout, not
+the other way round:**
+
+```
+multiplier = payout_per_winner / STAKE
+```
+
+Displayed to 2 decimal places, e.g. `×4.75`. This is what a winner actually
+received, divided by what they staked — never the pre-rounding ideal
+`(1 − RAKE) / share`, which diverges from it once the floor applies. See §1.
 
 ### 4.1 Rounding — chips are integers
 
@@ -95,8 +117,10 @@ payout_per_winner = floor(prize / winner_count)
 dust              = prize − (payout_per_winner × winner_count)
 ```
 
-**`dust` goes to the house, with the rake.** It is at most
-`winner_count − 1` chips.
+**`dust` goes to the house, with the rake.** Both are credited to the house
+account in one `rake`-kind ledger entry (`data-model.md` §5.1) — without a
+counterparty row for it, the ledger cannot show conservation on its own. Dust
+is at most `winner_count − 1` chips.
 
 Three properties this guarantees:
 
@@ -118,22 +142,32 @@ house_take            =  pot − prize + dust
 
 This is an invariant, not an aspiration. It should be asserted in the
 settlement function and in tests. If it fails, chips have been created or
-destroyed and the ledger is no longer trustworthy.
+destroyed and the ledger is no longer trustworthy. It is also directly
+checkable from the ledger itself, not merely from the settlement code's own
+arithmetic: `select sum(amount) from chip_ledger where round_id = $1` must be
+`0` for every settled round, because the `rake` entry (§4.1) is the house's
+counterparty to every stake and payout in that round.
 
 ## 5. Worked examples
+
+Every multiplier below is `payout_per_winner / STAKE`, computed **after**
+the floor in §4.1 — what a winner actually received. It is not
+`(1 − RAKE) / share`; that pre-rounding value is shown alongside the first
+two examples only to make the divergence visible.
 
 **Ordinary round.** 47 players, no ties.
 
 ```
-N          = max(1, ceil(47 × 0.10)) = ceil(4.7) = 5
-pot        = 47 × 20      = 940
-prize      = 940 × 0.95   = 893
-share      = 5 / 47       = 0.10638
-multiplier = 0.95 / 0.10638 = 8.93   → "×8.93"
-payout     = floor(893 / 5) = floor(178.6) = 178
-dust       = 893 − (178 × 5) = 3
-house      = (940 − 893) + 3 = 50
-check      : 178×5 + 50 = 890 + 50 = 940 = pot ✅
+N            = max(1, ceil(47 × 0.10)) = ceil(4.7) = 5
+pot          = 47 × 20      = 940
+prize        = 940 × 0.95   = 893
+share        = 5 / 47       = 0.10638
+pre-round    = 0.95 / 0.10638 = 8.93   (ideal, not what is paid)
+payout       = floor(893 / 5) = floor(178.6) = 178
+multiplier   = 178 / 20 = 8.90   → "×8.90"
+dust         = 893 − (178 × 5) = 3
+house_take   = (940 − 893) + 3 = 50
+check        : 178×5 + 50 = 890 + 50 = 940 = pot ✅
 ```
 
 **Ties at the cut-off.** 47 players, three bets tie at rank 5.
@@ -142,10 +176,11 @@ check      : 178×5 + 50 = 890 + 50 = 940 = pot ✅
 N            = 5
 winner_count = 7        (ranks 1-4, plus three tied at 5)
 share        = 7 / 47   = 0.14894
-multiplier   = 0.95 / 0.14894 = 6.38  → "×6.38"
+pre-round    = 0.95 / 0.14894 = 6.38   (ideal, not what is paid)
 payout       = floor(893 / 7) = 127
+multiplier   = 127 / 20 = 6.35   → "×6.35"
 dust         = 893 − 889 = 4
-house        = 47 + 4 = 51
+house_take   = 47 + 4 = 51
 check        : 127×7 + 51 = 889 + 51 = 940 ✅
 ```
 
@@ -154,32 +189,46 @@ check        : 127×7 + 51 = 889 + 51 = 940 ✅
 ```
 N          = max(1, ceil(0.3)) = 1
 pot        = 60,  prize = 57
-multiplier = 0.95 / (1/3) = 2.85
-payout     = 57,  dust = 0,  house = 3
+payout     = floor(57 / 1) = 57
+multiplier = 57 / 20 = 2.85   → "×2.85"
+dust       = 0,  house_take = 3
 check      : 57 + 3 = 60 ✅
 ```
+
+At this crowd size `prize / winner_count` happens to be whole, so the
+pre-round and post-floor values coincide. That is a coincidence of this
+example, not a rule.
 
 **Everyone wins.** 5 players, all tied at rank 1.
 
 ```
-winner_count = 5, share = 1.0, multiplier = 0.95
-payout       = floor(95/5) = 19
+winner_count = 5, share = 1.0
+pot          = 100, prize = 95
+payout       = floor(95 / 5) = 19
+multiplier   = 19 / 20 = 0.95   → "×0.95"
+dust         = 0,  house_take = 5
+check        : 19×5 + 5 = 95 + 5 = 100 ✅
 ```
 
 Each player stakes 20 and receives 19. The rake makes a fully-tied round a net
 loss for every participant. This is arithmetically correct and it is the
-honest outcome, but it will feel bad. **Flagged as an open product question in
-`decisions.md`** — one option is to void and refund a round where
+honest outcome, but it will feel bad. Crowdflip already treats this as a void
+condition — `resolve()` (`reference-crowdflip.md` §3) voids on
+`countA === countB` (tie) or either side at zero (unanimous), refunding
+stakes with no rake taken. **Flagged as an open product question in
+`decisions.md` O3, crediting that precedent** — one option is to void and
+refund this game's round the same way, whenever
 `winner_count == player_count`.
 
 ## 6. Edge cases
 
 | Case | Rule |
 |---|---|
-| Zero bets | No settlement. Round voids. No ledger entries. |
-| One bet | That bet wins. `multiplier = 0.95`. Player loses 1 chip to rake. |
+| Zero bets | `settle_round` still claims the round and marks it settled (`data-model.md` §6, step 2), then branches before the payout maths (step 4): no ledger rows are written, `winner_count/multiplier/payout` return as `0/null/0`. `prize / winner_count` never executes — dividing by zero is not caught, it is never reached. |
+| One bet | That bet wins. `payout = floor(0.95 × 20) = 19`, `multiplier = 19 / 20 = 0.95`. Player loses 1 chip to rake. |
 | All guesses identical | All win. See §5 example 4. |
-| Insufficient balance | Bet rejected before insert. Never a negative balance. |
+| Insufficient balance | Bet rejected inside `place_bet()`, before insert. Never a negative balance. |
+| Guess outside the game's range | Rejected inside `place_bet()`, before insert. See `integrity.md` §3. |
 | Result outside guess range | Legal. The nearest guess still wins, however far off. |
 | Round never settled | Stakes stay debited until settlement runs. Settlement is idempotent and can be re-run safely. |
 
@@ -197,4 +246,6 @@ Reasons:
   place.
 - One implementation means one place to audit.
 
-See `integrity.md` §4 for idempotency and `data-model.md` §6 for the signature.
+See `integrity.md` §4 for idempotency and the advisory lock against a
+landing bet, and `data-model.md` §6 for the signature and the zero-bet
+branch.

@@ -35,8 +35,12 @@ Three points that catch people:
 
 1. **Round state is derived from timestamps, never stored.** No `state`
    column. A stored state creates a window where late bets land.
-2. **`result_value` lives in its own table.** RLS cannot hide one column of a
-   readable row. Merging it into `rounds` publishes the answer during betting.
+2. **`result_value` lives in its own table.** Not because RLS can't hide a
+   column — PostgreSQL has column-level `GRANT` and PostgREST honours it. The
+   real reason: a `GRANT` is static, and this gate is time-varying (readable
+   only after `result_visible_at`). Only an RLS policy is evaluated per row,
+   per query, against the live clock. Merging the column into `rounds`
+   publishes the answer during betting.
 3. **Crowdflip's "forced spectacle" rigs outcomes.** Verified in source. Fine
    for a fake crowd, fraud with a real one. Demo flag only. §8.1.
 

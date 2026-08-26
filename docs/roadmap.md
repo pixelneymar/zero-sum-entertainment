@@ -25,21 +25,34 @@ zero — but that is the owner's call to confirm, not an assumption to make.
 
 The whole product in one phase, with no interface.
 
-- [ ] `games`, `rounds`, `round_results`, `bets`, `profiles`
-- [ ] `chip_ledger`, `balances`, balance trigger
-- [ ] RLS on every table, per `integrity.md`
-- [ ] `round_stats` view with `security_invoker = true`
-- [ ] `settle_round()` with the idempotent claim and the conservation assert
+- [ ] `games`, `rounds`, `round_results`, `bets`, `profiles` (with the house
+      account row)
+- [ ] `chip_ledger` (with the `rake` kind), `balances`, balance trigger
+- [ ] RLS on every table, per `integrity.md` — `bets` gets SELECT only, no
+      INSERT policy
+- [ ] `place_bet()` — advisory lock, timing/stake/guess checks, bet insert
+      and ledger debit in one transaction
+- [ ] `round_stats()` as a `SECURITY DEFINER` function returning only
+      `count()`/`sum(stake)` — **not** a `security_invoker` view; see
+      `decisions.md`, "Corrected"
+- [ ] `settle_round()` with the advisory lock, the idempotent claim, the
+      zero-bet branch, the house `rake` entry, and the conservation assert
 - [ ] `server_now()` RPC
 
 **Exit criteria — all provable by direct API call, no client involved:**
 
-- [ ] Insert into `bets` at `betting_closes_at + 50 ms` → policy violation
-- [ ] `select` on `round_results` before `reveal_at` → zero rows
-- [ ] `select` another user's `guess` before `reveal_at` → zero rows
-- [ ] `round_stats` returns correct counts while guesses stay hidden
+- [ ] Direct INSERT into `bets`, bypassing `place_bet()` → policy violation,
+      at any time
+- [ ] `place_bet()` called at `betting_closes_at + 50 ms` → raises, no bet
+      or ledger row written
+- [ ] `select` on `round_results` before `result_visible_at` → zero rows
+- [ ] `select` another user's `guess` before `result_visible_at` → zero rows
+- [ ] `round_stats()` returns correct counts while guesses stay hidden
 - [ ] `settle_round()` twice → identical result, one set of ledger rows
+- [ ] `settle_round()` on a zero-bet round → no ledger rows, no error
 - [ ] `sum(chip_ledger.amount) = balances.balance` after every settlement
+- [ ] `sum(chip_ledger.amount) = 0` for every settled round, including the
+      house `rake` entry
 - [ ] Conservation holds on every worked example in `game-rules.md` §5
 
 Phase 1 is the phase worth being slow in. Everything after is presentation.
