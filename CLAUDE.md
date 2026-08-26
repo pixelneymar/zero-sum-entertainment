@@ -276,6 +276,28 @@ a guarantee:
 
 Tests live in `tests/`. Run them before declaring any task complete.
 
+## Video assets
+
+Source `.mov` files (HEVC, 146 MB) stay in `videos/` and are gitignored.
+Transcoded H.264 MP4s live in `symbols/assets/videos/` (also gitignored) and
+are **published to Supabase Storage**, public bucket `videos`:
+
+- `https://xgvuavikubqwsdhoadyw.supabase.co/storage/v1/object/public/videos/banana.mp4`
+- `https://xgvuavikubqwsdhoadyw.supabase.co/storage/v1/object/public/videos/water.mp4`
+
+The app plays from Storage. The runner serves `symbols/assets/` at `/assets/`
+as a local fallback. Transcode with `ffmpeg` (`~/.local/bin`, from
+`ffmpeg-static`):
+
+```bash
+ffmpeg -y -i videos/banana.mov -c:v libx264 -preset veryfast -crf 23 \
+  -pix_fmt yuv420p -movflags +faststart -an symbols/assets/videos/banana.mp4
+supabase storage cp --experimental symbols/assets/videos/banana.mp4 ss:///videos/banana.mp4
+```
+
+Round timings and results are in `docs/rounds.md`. They were read from the
+footage frame by frame. If a video is re-cut, re-verify every result.
+
 ## Project hygiene
 
 - `videos/` is gitignored. The `.mov` files are 146 MB and must never enter git.

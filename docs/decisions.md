@@ -277,3 +277,28 @@ deliberate.
   (940 × 0.95) / 6 = 148.83`, `multiplier = 148.83 / 20 = ×7.44`, not `×4.75`
   or `+95`. Recorded as an arithmetic error in v0.1 itself, not carried into
   any v1.0 worked example.
+
+### C16 — Results verified against the footage; water range widened
+The four `result_value`s were read from the scale displays in extracted
+frames (`ffmpeg -ss <t> … crop`), not assumed. `docs/rounds.md` records them
+with the frame times. Banana: 0.082/0.095 kg → −13 (matching the v0.1
+example exactly, which confirms the `left − right` convention) and
+0.079/0.094 → −15. Water: 0.161 kg → −39 and 0.174 kg → −26.
+
+Both water pours land outside the ±20 range v0.1 assumed for every game. A
+slider that cannot reach the answer is wrong for a demo, so `water_200g` is
+−50…+50. Banana stays ±20. `game-rules.md` §6 already allows an out-of-range
+result (nearest guess still wins); the range change is about the input, not
+the rule.
+
+Also new: a **cold open** between rounds. v0.1 paused the video at
+`bet_open_at` and never showed the hosts' intro. The engine now plays from
+the previous `pause_at` to the next `bet_open_at` (phase `intro`) so the
+video is continuous. The footage was shot as a show; skipping the hosts
+wasted it.
+
+### C17 — Source videos are HEVC in .mov; transcoded to H.264 MP4
+Chrome's HEVC support is inconsistent and `.mov` is worse. Transcoded with
+`ffmpeg-static` (npm, user-local) to 1280×720 H.264, `+faststart`, no audio:
+77 MB → 5.0 MB and 69 MB → 4.0 MB. The runner serves `symbols/assets/` at
+`/assets/`; project-root `videos/` is not served at all (404 verified).

@@ -37,7 +37,7 @@ values
     'nearest',
     -20, 20, 1,
     'g',
-    'banana.mov',
+    'https://xgvuavikubqwsdhoadyw.supabase.co/storage/v1/object/public/videos/banana.mp4',
     true
   ),
   (
@@ -46,9 +46,9 @@ values
     'Water 200g',
     'Guess how far off 200g the pour lands',
     'nearest',
-    -20, 20, 1,
+    -50, 50, 1,
     'g',
-    'water.mov',
+    'https://xgvuavikubqwsdhoadyw.supabase.co/storage/v1/object/public/videos/water.mp4',
     true
   )
 on conflict (slug) do update
