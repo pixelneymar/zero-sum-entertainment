@@ -58,3 +58,8 @@ Thumbs.db
 .vscode/*
 !.vscode/extensions.json
 *.swp
+
+# Media source files — large binaries, distributed out-of-band (see docs/architecture.md §4)
+videos/
+*.mov
+*.mp4
