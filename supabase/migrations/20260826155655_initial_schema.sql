@@ -69,6 +69,22 @@ begin
 end;
 $$;
 
+
+-- ---------------------------------------------------------------------------
+-- staff
+-- ---------------------------------------------------------------------------
+
+create table public.staff (
+  user_id     uuid primary key references auth.users (id) on delete cascade,
+  display_name text not null check (char_length(trim(display_name)) between 1 and 120),
+  role        public.staff_role not null default 'editor',
+  created_at  timestamptz not null default now(),
+  updated_at  timestamptz not null default now()
+);
+
+comment on table public.staff is
+  'Back-office users. Presence in this table is what grants write access to content.';
+
 -- Membership tests used by the policies below.
 -- SECURITY DEFINER on purpose: these read public.staff, and public.staff itself
 -- has RLS. Without DEFINER the staff policies would recurse into themselves.
@@ -105,21 +121,6 @@ revoke execute on function public.is_staff() from public;
 revoke execute on function public.is_admin() from public;
 grant execute on function public.is_staff() to authenticated, service_role;
 grant execute on function public.is_admin() to authenticated, service_role;
-
--- ---------------------------------------------------------------------------
--- staff
--- ---------------------------------------------------------------------------
-
-create table public.staff (
-  user_id     uuid primary key references auth.users (id) on delete cascade,
-  display_name text not null check (char_length(trim(display_name)) between 1 and 120),
-  role        public.staff_role not null default 'editor',
-  created_at  timestamptz not null default now(),
-  updated_at  timestamptz not null default now()
-);
-
-comment on table public.staff is
-  'Back-office users. Presence in this table is what grants write access to content.';
 
 create trigger staff_set_updated_at
   before update on public.staff
