@@ -12,6 +12,11 @@ export const main = {
     description: '{{ appMetaDescription | polyglot }}'
   },
 
+  // App bootstrap: signs in anonymously (ensure_profile), measures the server
+  // clock, loads the balance, and starts the 250ms display tick. Idempotent —
+  // engineStart no-ops when the tick loop is already running.
+  onRender: (el) => el.call('startEngine'),
+
   // ---- start screen -------------------------------------------------------
   Picker: {
     display: (el, s) => (s.screen === 'picker' ? 'flex' : 'none'),
@@ -20,7 +25,11 @@ export const main = {
     width: '100%',
     minHeight: '100vh',
     padding: 'C',
+    gap: 'B',
 
+    // Data-layer failures must be visible on every screen — a silently
+    // failing data layer is exactly what this banner exists to prevent.
+    ErrorBanner: {},
     GamePicker: {}
   },
 

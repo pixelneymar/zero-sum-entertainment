@@ -171,7 +171,10 @@ export const BetPanel = {
     onClick: (e, el, s) => {
       if (s.myBet || s.phase !== 'betting') return
       const guess = s.myGuess == null ? 0 : s.myGuess
-      s.update({ myBet: { guess, stake: 20 } })
+      // The server's place_bet RPC is the only judge — a rejection surfaces
+      // via state.error and myBet stays null so the UI shows the bet did NOT
+      // go through.
+      el.call('submitBet', guess)
     },
 
     PlaceLabel: {

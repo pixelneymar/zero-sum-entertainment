@@ -11,8 +11,8 @@
 // this file is ever computed by guessing a winner or a payout — that math
 // lives only in `settle_round()` on the server (docs/game-rules.md §7).
 //
-// symbols/lib/engine.js is what drives these values over time; UI reads
-// them, symbols/lib acts as the only writer.
+// The engine in symbols/globalScope.js is what drives these values over
+// time; UI reads them, the engine acts as the only writer.
 export default {
   // 'picker' — GamePicker is shown. 'playing' — BettingStage is shown.
   screen: 'picker',

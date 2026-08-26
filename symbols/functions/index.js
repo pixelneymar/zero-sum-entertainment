@@ -1,7 +1,27 @@
-// frank only bundles its discovery slots (components, functions, globalScope,
-// designSystem, pages, state, config). A bare `lib/` directory is stripped from
-// the bundle entirely — verified: startEngine was absent from the served output.
-// Re-exporting through this slot is what pulls the data layer in.
-export { startEngine, stopEngine, selectGame, backToPicker, submitBet } from '../lib/engine.js'
-export { serverNow } from '../lib/clock.js'
-export { phaseOf, secondsLeft } from '../lib/round.js'
+// Registered functions — invoked via `el.call('name', ...)` with `this`
+// bound to the calling element. Each entry is a thin, self-contained wrapper
+// over the engine in globalScope.js: the bare engine* references below are
+// resolved by frank to `__scope.engine*` (el.scope -> context.globalScope),
+// which is the supported way for call-invoked sections to reach shared code.
+// Anything fancier (re-exports from a lib/ directory, module-scope reads)
+// does NOT survive frank's serialization.
+
+export const startEngine = function () {
+  return engineStart(this)
+}
+
+export const stopEngine = function () {
+  return engineStop()
+}
+
+export const selectGame = function (slug) {
+  return engineSelectGame(slug)
+}
+
+export const submitBet = function (guess) {
+  return engineSubmitBet(guess)
+}
+
+export const backToPicker = function () {
+  return engineBackToPicker()
+}

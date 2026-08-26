@@ -54,7 +54,10 @@ export const GamePicker = {
     childExtends: 'GameCard',
 
     BananaCard: {
-      onClick: (e, el, s) =>
+      onClick: (e, el, s) => {
+        // Optimistic switch so the stage appears immediately; the engine then
+        // reconciles game/round/history from the server (or surfaces the
+        // failure via state.error).
         s.update({
           screen: 'playing',
           phase: 'preview',
@@ -67,7 +70,9 @@ export const GamePicker = {
             guessStep: 1,
             resultUnit: 'g'
           }
-        }),
+        })
+        el.call('selectGame', 'banana_cut')
+      },
 
       CardGlyph: { text: '🍌' },
       CardTitle: { text: '{{ bananaTitle | polyglot }}' },
@@ -75,7 +80,7 @@ export const GamePicker = {
     },
 
     WaterCard: {
-      onClick: (e, el, s) =>
+      onClick: (e, el, s) => {
         s.update({
           screen: 'playing',
           phase: 'preview',
@@ -88,7 +93,9 @@ export const GamePicker = {
             guessStep: 1,
             resultUnit: 'g'
           }
-        }),
+        })
+        el.call('selectGame', 'water_200g')
+      },
 
       CardGlyph: { text: '💧' },
       CardTitle: { text: '{{ waterTitle | polyglot }}' },

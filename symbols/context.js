@@ -4,10 +4,12 @@
 // keeps the entry stable as modules are added or removed.
 import * as components from './components/index.js'
 import * as functions from './functions/index.js'
+import * as globalScope from './globalScope.js'
 import designSystem from './designSystem/index.js'
 import pages from './pages/index.js'
 import state from './state.js'
 import config from './config.js'
+import dependencies from './dependencies.js'
 
 
 export default {
@@ -15,6 +17,11 @@ export default {
   state,
   components,
   functions,
+  globalScope,
   pages,
-  designSystem
+  designSystem,
+  // The runtime importmap — without this key in the emitted project JSON the
+  // served page gets NO <script type="importmap">, and the data layer's
+  // `await import('@supabase/supabase-js')` cannot resolve in the browser.
+  dependencies
 }
