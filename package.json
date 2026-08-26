@@ -1,0 +1,22 @@
+{
+  "name": "zero-sum-entertainment",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Zero Sum Entertainment - web app built with Symbols (symbo.ls) and Supabase.",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "smbls start",
+    "build": "smbls build",
+    "db:link": "supabase link --project-ref xgvuavikubqwsdhoadyw",
+    "db:push": "supabase db push",
+    "db:diff": "supabase db diff",
+    "db:types": "supabase gen types typescript --linked > symbols/types/supabase.d.ts"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0"
+  }
+}

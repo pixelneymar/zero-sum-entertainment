@@ -1,0 +1,10 @@
+{
+  "key": "zero-sum-entertainment",
+  "version": "0.1.0",
+  "branch": "main",
+  "port": 1234,
+  "bundler": "parcel",
+  "sharedLibraries": [
+    "system/default"
+  ]
+}
