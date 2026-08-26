@@ -11,5 +11,10 @@ export default {
   neutral: '#8C8C95',
   ember: '#FF453A',
   mint: '#2FA36B',
-  gold: '#E9B949'
+  gold: '#E9B949',
+  // Workspace chart series hue (dataviz slot 1, dark step). One hue per chart.
+  azure: '#3987E5',
+  // Workspace console surfaces — solid, no footage underneath.
+  slate: '#1D1F27',
+  graphite: '#2A2C36'
 }

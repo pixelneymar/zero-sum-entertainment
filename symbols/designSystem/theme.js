@@ -62,5 +62,31 @@ export default {
   locked: {
     '@light': { background: 'white', color: 'black' },
     '@dark': { background: 'white', color: 'black' }
+  },
+
+  // ---- workspace console (always dark; no footage underneath) ----------
+  wsShell: {
+    '@light': { background: 'ink', color: 'white' },
+    '@dark': { background: 'ink', color: 'white' }
+  },
+
+  wsPanel: {
+    '@light': { background: 'slate', color: 'white' },
+    '@dark': { background: 'slate', color: 'white' }
+  },
+
+  wsRail: {
+    '@light': { background: 'black', color: 'white' },
+    '@dark': { background: 'black', color: 'white' }
+  },
+
+  wsMuted: {
+    '@light': { color: 'haze' },
+    '@dark': { color: 'haze' }
+  },
+
+  wsDim: {
+    '@light': { color: 'neutral' },
+    '@dark': { color: 'neutral' }
   }
 }

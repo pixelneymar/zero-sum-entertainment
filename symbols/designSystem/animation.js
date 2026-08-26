@@ -36,6 +36,10 @@ export default {
     from: { transform: 'scaleY(0)' },
     to: { transform: 'scaleY(1)' }
   },
+  wsSlide: {
+    from: { transform: 'translateX(-100%)' },
+    to: { transform: 'translateX(400%)' }
+  },
   urgentBlink: {
     '0%': { opacity: '1' },
     '50%': { opacity: '.55' },

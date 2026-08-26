@@ -68,5 +68,37 @@ export default {
   error: null,
 
   // The engine mirrors the <video> element here every tick.
-  video: { currentTime: 0, duration: 0, playing: false }
+  video: { currentTime: 0, duration: 0, playing: false },
+
+  // [{ slug, title, active }] — the game catalogue with its active flag.
+  // The picker may grey out inactive games; the engine refuses them anyway.
+  games: [],
+
+  // Workspace dashboard state — WS_CONTRACT.md. Written only by the wk*
+  // functions in globalScope.js via wkCommit(); the UI reads it.
+  ws: {
+    view: 'overview',
+    source: null,
+    me: null,
+    loading: false,
+    error: null,
+    lastRefresh: null,
+    overview: {
+      rounds: 0, bets: 0, staked: 0, paidOut: 0, houseTake: 0, players: 0,
+      avgMultiplier: null, bestMultiplier: null, conservationOk: true, breaches: 0
+    },
+    series: { potByRound: [], multiplierByRound: [], playersByRound: [] },
+    live: [],
+    rounds: [],
+    selectedRoundId: null,
+    roundDetail: null,
+    bets: [],
+    betsFilter: { gameSlug: null, roundId: null, playerId: null, won: null },
+    players: [],
+    ledger: [],
+    ledgerFilter: { kind: null, playerId: null, roundId: null },
+    ledgerAudit: { rows: [], allOk: true },
+    games: [],
+    integrity: []
+  }
 }

@@ -32,8 +32,9 @@ guarantees held.
 | Games | Config per game (range, step, unit, video, active) and the round scripts from `rounds.md`. Toggle active. |
 | Integrity | Live indicators, one per guarantee: result hidden pre-reveal · no bet after lock · conservation per round · ledger = balances · settlement idempotent. Each shows pass / fail / n-a with detail. |
 
-Management actions: set game active, void a round (refund all stakes),
-schedule a round (server), reset demo store (demo), export CSV per view.
+Management actions: set game active (both sources), void a round and schedule
+a round (server only — in demo they answer "Not available in demo mode"),
+reset demo store (demo only), export CSV per view.
 
 ## Data shapes (source-agnostic)
 

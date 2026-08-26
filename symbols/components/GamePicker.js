@@ -87,5 +87,33 @@ export const GamePicker = {
     textAlign: 'center',
     maxWidth: '34em',
     margin: '0'
+  },
+
+  // Staff door to the analytics console (docs/workspace.md).
+  WorkspaceLink: {
+    tag: 'button',
+    fontFamily: 'inherit',
+    background: 'transparent',
+    border: 'none',
+    padding: 'X Y',
+    round: 'Y',
+    fontSize: 'Z',
+    fontWeight: '700',
+    letterSpacing: 'X',
+    textTransform: 'uppercase',
+    theme: 'muted',
+    cursor: 'pointer',
+    animation: 'fadeIn .6s ease-out .3s both',
+    ':hover': { color: 'gold' },
+    ':focus-visible': { outline: '2px solid currentColor', outlineOffset: '2px' },
+    // router(path, element, state, options) lives on the root element.
+    onClick: (e, el) => {
+      let root = el
+      while (root && root.parent && root.parent.key !== undefined) root = root.parent
+      if (root && typeof root.navigate === 'function') root.navigate('/workspace')
+      else if (root && typeof root.router === 'function') root.router('/workspace', root, {}, { pushState: true })
+    },
+    LinkLabel: { tag: 'span', text: '{{ wsOpenWorkspace | polyglot }}' },
+    LinkArrow: { tag: 'span', text: ' →' }
   }
 }

@@ -2,3 +2,11 @@
 {"schema":"frank-audit/1.0","opId":"audit-mtagtix1-bv11c1qp","timestamp":"2026-08-26T19:06:51.259Z","kind":"audit.complete","scannedFiles":42,"findingCount":25,"bySeverity":{"critical":21,"structural":4}}
 {"schema":"frank-audit/1.0","opId":"audit-mtagyqub-jvlu1dy4","timestamp":"2026-08-26T19:10:54.563Z","kind":"audit.start","ruleIds":null}
 {"schema":"frank-audit/1.0","opId":"audit-mtagyqub-jvlu1dy4","timestamp":"2026-08-26T19:10:54.787Z","kind":"audit.complete","scannedFiles":43,"findingCount":11,"bySeverity":{"critical":11}}
+{"schema":"frank-audit/1.0","opId":"audit-mtaikamx-7c9mio9o","timestamp":"2026-08-26T19:55:39.609Z","kind":"audit.start","ruleIds":null}
+{"schema":"frank-audit/1.0","opId":"audit-mtaikamx-7c9mio9o","timestamp":"2026-08-26T19:55:40.095Z","kind":"audit.complete","scannedFiles":92,"findingCount":63,"bySeverity":{"critical":41,"structural":15,"systemic":7}}
+{"schema":"frank-audit/1.0","opId":"audit-mtailxm6-7q2m1fo3","timestamp":"2026-08-26T19:56:56.047Z","kind":"audit.start","ruleIds":null}
+{"schema":"frank-audit/1.0","opId":"audit-mtailxm6-7q2m1fo3","timestamp":"2026-08-26T19:56:56.529Z","kind":"audit.complete","scannedFiles":92,"findingCount":26,"bySeverity":{"critical":19,"systemic":7}}
+{"schema":"frank-audit/1.0","opId":"audit-mtaimaxz-mjfjr989","timestamp":"2026-08-26T19:57:13.319Z","kind":"audit.start","ruleIds":null}
+{"schema":"frank-audit/1.0","opId":"audit-mtaimaxz-mjfjr989","timestamp":"2026-08-26T19:57:13.822Z","kind":"audit.complete","scannedFiles":92,"findingCount":20,"bySeverity":{"critical":13,"systemic":7}}
+{"schema":"frank-audit/1.0","opId":"audit-mtaixzhj-9wtqf21k","timestamp":"2026-08-26T20:06:18.343Z","kind":"audit.start","ruleIds":null}
+{"schema":"frank-audit/1.0","opId":"audit-mtaixzhj-9wtqf21k","timestamp":"2026-08-26T20:06:18.827Z","kind":"audit.complete","scannedFiles":92,"findingCount":20,"bySeverity":{"critical":13,"systemic":7}}
