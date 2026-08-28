@@ -393,12 +393,27 @@ templates do not interpolate inside `attr`; an icon child must be named
 component has a `theme`, a `background` function is ignored (use a theme
 function); a `-` prefix only negates sequence letters, so negative insets
 need their own registered size (`spacing3Neg`); `globalScope.js` edits can
-be served stale until the runner cache is deleted.
+be served stale until the runner cache is deleted; `designSystem/font.js`
+never loads a face in this runtime build (Google URLs become an `@import`
+appended after other rules, self-hosted files become an array the CSS
+injector mangles) — the brand face is loaded by the `BrandFont` `<style>`
+element in `pages/main.js` instead (docs/brand.md).
 
-The bet dock lives in its own strip below the footage; the crowd/history
-rails and the result panels float over it on `stageGlass`. Do not animate
-a transform on any element with a backdrop-filter over the `<video>`
-(Chrome mis-composites it).
+The footage is full-bleed and the betting UI is an overlay (research:
+"notched quick-bet sheet", `docs/overlay.md`). `symbols/components/BetSheet.js`
+puts one pane per challenger in the bottom corners of the frame (x 2-28% and
+72-98%), on the side where that person stands; the notch between them is
+never covered, so the scales at bottom-centre stay in raw footage in every
+phase. Each pane is the challenger card plus ONE button whose label carries
+the state (Pick -> Place 20 chips -> Bet placed; the other side reads "or
+back"). At lock both panes collapse to 44px pills that later carry each
+side's reading and the winner's trophy. The objective chip and the lock
+band sit top-left (faces are centre-top). Crowd and history are top-bar
+chips (`HudChips.js`) with popovers whose open state lives on the TopBar.
+Results and the summary are centred in the y 18-74% band. Phones get the
+same sheet in `MobileBand` under the video. Every overlay percentage is
+relative to `FrameBox`. Do not animate a transform on any element with a
+backdrop-filter over the `<video>` (Chrome mis-composites it).
 
 The workspace console (`Ws*`) keeps its own dark palette; it is out of scope.
 

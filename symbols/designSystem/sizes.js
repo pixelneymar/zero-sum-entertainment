@@ -74,6 +74,8 @@ export default {
   card: '34rem',
   poster: '22rem',
   portrait: '3.5rem',
+  // brand (docs/brand.md): the stacked wordmark on the start screen
+  logoHero: '28rem',
 
   // ---- workspace console furniture (Ws*) ----------------------------------
   wsRail: '13.5rem',

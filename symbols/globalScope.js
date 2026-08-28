@@ -248,6 +248,22 @@ export const updateState = (patch) => {
   if (!s || typeof s.update !== 'function') return
   audioOnPatch(s, patch)
   s.update(patch)
+  stateNudge(s)
+}
+
+// The runtime applies function-driven style props (background, color, theme)
+// one update late: they read the state as it was before the patch. One extra
+// empty update on the next frame makes the visual follow the click at once
+// instead of on the next engine tick. Throttled to one per frame.
+export const stateNudge = (s) => {
+  if (engineData.nudgeFrame) return
+  const raf = typeof requestAnimationFrame === 'function' ? requestAnimationFrame : (fn) => setTimeout(fn, 16)
+  engineData.nudgeFrame = raf(() => {
+    engineData.nudgeFrame = 0
+    try {
+      s.update({})
+    } catch {}
+  })
 }
 
 // ---------------------------------------------------------------------------

@@ -95,6 +95,10 @@ export const GamePicker = {
       maxWidth: 'headerMax',
       marginBottom: 'spacing12',
 
+      // Brand (docs/brand.md): the stacked wordmark is the hero image; the
+      // h1 below keeps the page's heading semantics.
+      LogoStacked: { marginBottom: 'spacing8' },
+
       // h1 (typography.md): 72 / tablet 48 / mobile 36, -1.5px tracking,
       // display line-height 1 (fundamentals floor for display type).
       PickerTitle: {
@@ -105,7 +109,7 @@ export const GamePicker = {
         '@tabletS': { fontSize: 'font6xl' },
         '@mobileL': { fontSize: 'font5xl' },
         lineHeight: '1',
-        fontWeight: '600',
+        fontWeight: '900',
         letterSpacing: '-0.09375rem',
         textWrap: 'balance',
         color: 'heading',

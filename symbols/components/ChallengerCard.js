@@ -1,4 +1,4 @@
-// One side of the duel, as a pick. Child of BetPanel.Sides via
+// One side of the duel, as a pick. Child of a BetPane's CardSlot via
 // childrenAs: 'state': `s.side`, `s.name`, `s.line`, `s.poster` are the
 // challenger; `s.root` is the app state. A tap selects; PLACE BET commits.
 // Inner glass card (cards.md interactive) with a white 30% control boundary
@@ -9,10 +9,13 @@ const canPick = (root) => !root.myBet && (root.phase === 'preview' || root.phase
 const isChosen = (root, side) => (root.myBet ? root.myBet.side === side : root.mySide === side)
 
 export const ChallengerCard = {
-  extends: 'CkCardInteractive',
   tag: 'button',
+  // Not a CkCard: a theme would override the background function below, and
+  // theme functions resolve one root update late in this runtime.
+  backdropFilter: 'blur(1rem) saturate(1.4)',
+  borderWidth: 'spacingPx',
+  borderStyle: 'solid',
   round: 'radiusDefault',
-  borderColor: 'paper.40',
   shadow: 'shadowXs',
   flow: 'x',
   align: 'center flex-start',
@@ -24,12 +27,12 @@ export const ChallengerCard = {
   textAlign: 'left',
   cursor: 'pointer',
   transition: 'background-color .2s ease-out, color .2s ease-out, border-color .2s ease-out, box-shadow .2s ease-out, transform .2s ease-out',
-  '@reducedMotion': { transition: 'none' },
-  // A theme function: with a theme set, the runtime ignores a background
-  // function, so the whole surface swaps theme (glass <-> brandFill).
-  // Not backed once the bet is in: the spec disabled surface (3.6:1), never
-  // a stacked opacity.
-  theme: (el, s) => (isChosen(s.root, s.side) ? 'brandFill' : s.root.myBet ? 'disabledCtl' : 'glass'),
+  '@reducedMotion': { transition: 'none', ':hover': { transform: 'none' } },
+  // Over the footage: stage glass when idle; brand when picked or backed;
+  // the spec disabled surface once the bet is on the other side.
+  background: (el, s) => (isChosen(s.root, s.side) ? 'brand' : s.root.myBet ? 'disabled' : 'neutralPrimary.85'),
+  color: (el, s) => (isChosen(s.root, s.side) ? 'paper' : s.root.myBet ? 'fgDisabled' : 'body'),
+  borderColor: (el, s) => (isChosen(s.root, s.side) ? 'paper.30' : 'paper.40'),
   ':hover': { shadow: 'shadowSm', transform: 'translateY(-2px)' },
   ':disabled': { cursor: 'not-allowed', shadow: 'none', transform: 'none' },
   ':focus-visible': { outline: 'spacing0_5 solid paper', outlineOffset: 'spacing0_5' },

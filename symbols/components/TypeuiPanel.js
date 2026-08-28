@@ -29,6 +29,12 @@ export const TypeuiPanel = {
   onRender: (el, s) => {
     if (readMinimized()) s.update({ minimized: true })
   },
+  // On the stage the expanded pill would sit bottom-centre, on the scales.
+  stateDeps: [(el, s) => s.root.screen],
+  onStateUpdate: (el, s, ctx, change) => {
+    const next = change && change.next ? change.next[0] : null
+    if (next === 'playing' && !s.minimized) s.update({ minimized: true })
+  },
   attr: {
     role: 'complementary',
     'aria-label': 'TypeUI',

@@ -10,7 +10,6 @@
 export const ResultsCard = {
   flow: 'y',
   align: 'center center',
-  attr: { role: 'status', 'aria-live': 'polite' },
   display: (el, s) => (s.screen === 'playing' && s.phase === 'results' && s.result ? 'flex' : 'none'),
 
   WinCard: {

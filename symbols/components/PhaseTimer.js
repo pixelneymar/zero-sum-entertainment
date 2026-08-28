@@ -14,6 +14,7 @@ export const PhaseTimer = {
     (s.phase === 'preview' ||
       s.phase === 'betting' ||
       s.phase === 'locked' ||
+      s.phase === 'reveal' ||
       s.phase === 'results')
       ? 'flex'
       : 'none',
@@ -32,12 +33,12 @@ export const PhaseTimer = {
     shadow: 'shadowMd',
     transition: 'background-color .15s ease, color .15s ease',
     '@reducedMotion': { transition: 'none' },
-    background: (el, s) => (s.phase === 'locked' ? 'brand' : 'neutralPrimary.85'),
-    color: (el, s) => (s.phase === 'locked' ? 'paper' : 'heading'),
+    background: (el, s) => (s.phase === 'locked' || s.phase === 'reveal' ? 'brand' : 'neutralPrimary.85'),
+    color: (el, s) => (s.phase === 'locked' || s.phase === 'reveal' ? 'paper' : 'heading'),
     attr: {
       role: 'timer',
       'aria-live': 'off',
-      'aria-label': (el, s) => `${Math.max(0, Math.ceil(s.secondsLeft ?? 0))} s`
+      'aria-label': (el, s) => (s.phase === 'reveal' ? s.revealWatching || 'Locked' : `${Math.max(0, Math.ceil(s.secondsLeft ?? 0))} s`)
     },
 
     // Presentation attributes only on the circles: giving them `color`
@@ -53,7 +54,7 @@ export const PhaseTimer = {
       '@reducedMotion': { transition: 'none' },
       attr: { viewBox: '0 0 100 100', 'aria-hidden': 'true' },
       color: (el, s) => {
-        if (s.phase === 'locked') return 'paper'
+        if (s.phase === 'locked' || s.phase === 'reveal') return 'paper'
         if (s.phase === 'betting' && (s.secondsLeft ?? 99) <= 5) return 'fgDanger'
         return 'fgBrand'
       },
@@ -81,7 +82,7 @@ export const PhaseTimer = {
             const totals = { preview: 5, betting: s.round ? s.round.lockAt : 20, locked: 5, results: 8 }
             const total = totals[s.phase] || 1
             const left = Math.max(0, Math.min(total, s.secondsLeft ?? 0))
-            const fraction = s.phase === 'locked' ? 1 : left / total
+            const fraction = s.phase === 'locked' || s.phase === 'reveal' ? 1 : left / total
             return String(276.46 * (1 - fraction))
           }
         }
@@ -98,7 +99,7 @@ export const PhaseTimer = {
       fontVariantNumeric: 'tabular-nums',
       text: (el, s) => String(Math.max(0, Math.ceil(s.secondsLeft ?? 0))),
       display: (el, s) =>
-        s.phase !== 'locked' && !(s.phase === 'betting' && (s.secondsLeft ?? 99) <= 5)
+        s.phase !== 'locked' && s.phase !== 'reveal' && !(s.phase === 'betting' && (s.secondsLeft ?? 99) <= 5)
           ? 'inline'
           : 'none'
     },
@@ -122,7 +123,7 @@ export const PhaseTimer = {
       position: 'relative',
       boxSize: 'icon20',
       color: 'paper',
-      display: (el, s) => (s.phase === 'locked' ? 'block' : 'none')
+      display: (el, s) => (s.phase === 'locked' || s.phase === 'reveal' ? 'block' : 'none')
     }
   },
 
@@ -134,7 +135,7 @@ export const PhaseTimer = {
     PreviewLabel: { tag: 'span', text: '{{ timerPreview | polyglot }}', display: (el, s) => (s.phase === 'preview' ? 'inline' : 'none') },
     BettingLabel: { tag: 'span', text: '{{ timerBetting | polyglot }}', display: (el, s) => (s.phase === 'betting' && (s.secondsLeft ?? 99) > 5 ? 'inline' : 'none') },
     ClosingLabel: { tag: 'span', text: '{{ timerClosing | polyglot }}', color: 'fgDanger', display: (el, s) => (s.phase === 'betting' && (s.secondsLeft ?? 99) <= 5 ? 'inline' : 'none') },
-    LockedLabel: { tag: 'span', text: '{{ timerLocked | polyglot }}', display: (el, s) => (s.phase === 'locked' ? 'inline' : 'none') },
+    LockedLabel: { tag: 'span', text: '{{ timerLocked | polyglot }}', display: (el, s) => (s.phase === 'locked' || s.phase === 'reveal' ? 'inline' : 'none') },
     ResultsLabel: { tag: 'span', text: '{{ timerResults | polyglot }}', display: (el, s) => (s.phase === 'results' ? 'inline' : 'none') }
   }
 }

@@ -36,7 +36,6 @@ export const CrowdPanel = {
       extends: 'CkBadge',
       theme: 'badgeBrand',
       borderColor: 'borderBrandSubtle',
-      attr: { role: 'status' },
       display: (el, s) => (s.phase === 'preview' || s.phase === 'betting' ? 'inline-flex' : 'none'),
 
       LiveDot: {
@@ -55,7 +54,6 @@ export const CrowdPanel = {
     LockBadge: {
       extends: 'CkBadge',
       theme: 'badgeAlt',
-      attr: { role: 'status' },
       display: (el, s) => (frozenPhase(s) ? 'inline-flex' : 'none'),
       Icon: { name: 'lock', boxSize: 'icon12', attr: { 'aria-hidden': 'true' } },
       LockWord: { tag: 'span', text: '{{ lockedBadge | polyglot }}' }

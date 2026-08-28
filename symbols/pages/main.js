@@ -13,11 +13,25 @@ export const main = {
 
   metadata: {
     title: '{{ appMetaTitle | polyglot }}',
-    description: '{{ appMetaDescription | polyglot }}'
+    description: '{{ appMetaDescription | polyglot }}',
+    // Brand mark (docs/brand.md). The head generator adds type="image/png".
+    icon: '/assets/brand/logo-mark-64.png'
   },
 
   // App bootstrap — the engine is the only writer of root state.
   onRender: (el) => el.call('startEngine'),
+
+  // Brand face (docs/brand.md). designSystem/font.js declares the same face,
+  // but the runtime hands its @font-face strings to the CSS injector as an
+  // array, which the injector mangles into an empty rule (verified
+  // 2026-08-28 against the served bundle; Google URLs fail too, as an
+  // @import appended after other rules). A <style> in the tree is the one
+  // path that reaches the browser. Remove this when font.js loads on its own.
+  BrandFont: {
+    tag: 'style',
+    text:
+      "@font-face{font-family:'darkerGrotesque';src:url('/assets/fonts/darker-grotesque-latin-wght-normal.woff2') format('woff2');font-weight:300 900;font-display:swap}"
+  },
 
   // ---- start screen -------------------------------------------------------
   Picker: {
@@ -110,14 +124,27 @@ export const main = {
       margin: '0',
       text: (el, s) => {
         if (s.screen !== 'playing') return ''
-        if (s.phase === 'results' && s.settlement) {
-          if (s.settlement.voided) return s.voidTitle || 'Dead heat'
-          if (!s.myBet) return s.resultKicker || 'Result'
-          return s.settlement.iWon ? `${s.youWon || 'You won'} ${s.settlement.myPayout} ${s.chipsUnit || 'chips'}` : s.youLost || 'Not this time'
-        }
         if (s.phase === 'locked') return s.betsLocked || 'Bets locked'
         if (s.myBet) return s.betPlaced || 'Bet placed'
         return ''
+      }
+    },
+
+    StageAlert: {
+      tag: 'p',
+      attr: { role: 'alert' },
+      position: 'absolute',
+      width: 'spacingPx',
+      height: 'spacingPx',
+      overflow: 'hidden',
+      clipPath: 'inset(50%)',
+      whiteSpace: 'nowrap',
+      margin: '0',
+      text: (el, s) => {
+        if (s.screen !== 'playing' || s.phase !== 'results' || !s.settlement) return ''
+        if (s.settlement.voided) return s.voidTitle || 'Dead heat'
+        if (!s.myBet) return s.resultKicker || 'Result'
+        return s.settlement.iWon ? `${s.youWon || 'You won'} ${s.settlement.myPayout} ${s.chipsUnit || 'chips'}` : s.youLost || 'Not this time'
       }
     },
 
@@ -131,7 +158,7 @@ export const main = {
       padding: 'spacing3 spacing6',
       '@tabletS': { padding: 'spacing3 spacing4' },
       position: 'relative',
-      zIndex: '1',
+      zIndex: '3',
       theme: 'glass',
       backdropFilter: 'blur(1rem) saturate(1.4)',
       borderBottomWidth: 'spacingPx',
@@ -139,13 +166,49 @@ export const main = {
       borderBottomColor: 'paper.10',
       shadow: 'shadowLg',
 
+      // Popover state is this bar's own (never root state). Esc, an outside
+      // tap and the lock frame close it.
+      // A local state delays function props by one root update, so the bar
+      // re-renders itself on every root field the chips read.
+      state: { popover: null, tick: 0 },
+      stateDeps: [
+        (el, s) => s.root.phase,
+        (el, s) => s.root.screen,
+        (el, s) => s.root.playerCount,
+        (el, s) => s.root.pot,
+        (el, s) => s.root.frozen,
+        (el, s) => s.root.history,
+        (el, s) => s.root.game
+      ],
+      onStateUpdate: (el, s, ctx, change) => {
+        const next = change && change.next ? change.next[0] : null
+        s.update({ tick: (s.tick || 0) + 1, popover: next === 'locked' ? null : s.popover })
+      },
+      onRender: (el, s) => {
+        if (typeof document === 'undefined' || document.__zseHudPopover) return
+        document.__zseHudPopover = true
+        const live = () => el.state || s
+        document.addEventListener('keydown', (e) => {
+          if (e.key === 'Escape' && live().popover) live().update({ popover: null })
+        })
+        document.addEventListener('click', () => {
+          if (live().popover) live().update({ popover: null })
+        })
+      },
+
       TopLeft: {
         flow: 'x',
         align: 'center flex-start',
         gap: 'spacing3',
         flexWrap: 'wrap',
+        // Brand (docs/brand.md): the same stacked wordmark as the start
+        // screen, compact (owner: the lockup read too big and different).
+        LogoStacked: {
+          LogoImg: { width: 'auto', maxWidth: 'none', height: 'spacing10', '@tabletS': { height: 'spacing8' } }
+        },
         RoundChip: {},
-        DemoBadge: {}
+        DemoBadge: {},
+        CrowdChip: {}
       },
 
       TopCentre: {
@@ -153,19 +216,23 @@ export const main = {
         align: 'center center',
         gap: 'spacing2',
         PhaseTimer: {},
-        RevealChip: {},
         ErrorBanner: {}
       },
 
       TopRight: {
         flow: 'x',
         align: 'center flex-end',
-        gap: 'spacing4',
+        gap: 'spacing3',
         flexWrap: 'wrap',
+        HistoryChip: {},
         BalanceChip: {},
         SoundToggle: {},
         ExitButton: {}
-      }
+      },
+
+      // Anchored popovers holding the existing widgets.
+      CrowdPopover: {},
+      HistoryPopover: {}
     },
 
     Body: {
@@ -175,77 +242,64 @@ export const main = {
       flex: '1',
       minHeight: '0',
       flow: 'y',
-      align: 'stretch flex-start',
+      align: 'center flex-start',
+      '@tabletS': { flex: '0 0 auto' },
 
-      // The footage. Nothing that belongs to betting sits on it: the dock
-      // lives in its own strip below, so the cut and the scales stay visible.
-      Screen: {
+      // Height-driven 16:9 box: as wide as the remaining height allows, never
+      // wider than the viewport. Every overlay percentage is relative to it.
+      FrameBox: {
         position: 'relative',
-        flex: '1',
-        minHeight: '0',
-        flow: 'y',
-        align: 'center center',
-        '@tabletS': { flex: '0 0 auto', minHeight: '56.25vw' },
+        height: '100%',
+        width: 'auto',
+        maxWidth: '100%',
+        aspectRatio: '16 / 9',
+        flexShrink: '0',
+        '@tabletS': { height: 'auto', width: '100%' },
 
-        // Height-driven 16:9 frame: as wide as the screen height allows,
-        // never wider than the viewport (then the footage letterboxes inside).
         Frame: {
-          height: '100%',
-          width: 'auto',
-          maxWidth: '100%',
-          aspectRatio: '16 / 9',
+          position: 'absolute',
+          inset: '0 0 0 0',
           background: 'videoBlack',
           borderWidth: 'spacingPx',
           borderStyle: 'solid',
           borderColor: 'paper.10',
           round: 'radiusBase',
-          shadow: 'shadowXl',
+          '@tabletS': { round: 'radiusNone', borderWidth: '0' },
           overflow: 'hidden',
+          shadow: 'shadowXl',
           VideoSurface: {}
         },
 
-        // HUD layer over the footage: side rails and the centred status panels.
+        // Overlays (desktop). The notch, x 28-72% below the top band, is
+        // never covered: the scales at bottom-centre stay in raw footage.
         Hud: {
           position: 'absolute',
           inset: '0 0 0 0',
           pointerEvents: 'none',
+          '@tabletS': { display: 'none' },
 
-          // Narrow viewports: the crowd widget moves into the dock strip.
-          LeftRail: {
+          // Top-left slot (x 2-36%, top 3%): objective while betting, the
+          // lock band at lock. Faces sit centre-top, so nothing goes there.
+          TopLeftSlot: {
             position: 'absolute',
-            left: 'spacing6',
-            top: '50%',
-            transform: 'translateY(-50%)',
-            pointerEvents: 'auto',
-            '@tabletS': { display: 'none' },
-            CrowdPanel: {}
-          },
-
-          RightRail: {
-            position: 'absolute',
-            right: 'spacing6',
-            top: '50%',
-            transform: 'translateY(-50%)',
-            pointerEvents: 'auto',
-            '@tabletS': { display: 'none' },
-            HistoryPanel: {}
-          },
-
-          // The lock stamp sits at the top of the frame, away from the scales.
-          Top: {
-            position: 'absolute',
-            top: 'spacing6',
-            left: '0',
-            right: '0',
+            top: '3%',
+            left: '2%',
+            width: '34%',
             flow: 'y',
-            align: 'center flex-start',
+            align: 'flex-start flex-start',
             pointerEvents: 'none',
+            ObjectiveChip: {},
             LockStamp: { pointerEvents: 'auto' }
           },
 
+          BetSheet: {},
+
+          // Results and the session summary, centred in the y 18-74% band so
+          // the scales with the deciding reading stay visible under them.
           Centre: {
             position: 'absolute',
             inset: '0 0 0 0',
+            padding: '18% 0 26%',
             flow: 'y',
             align: 'center center',
             pointerEvents: 'none',
@@ -255,33 +309,31 @@ export const main = {
         }
       },
 
-      // Bet dock strip, separate from the footage. 80px bottom clearance keeps
-      // the fixed TypeUI panel off the PLACE BET row.
-      DockStrip: {
-        flexShrink: '0',
+      // Phones: the same sheet in a band under the footage; the video is
+      // never covered.
+      MobileBand: {
+        display: 'none',
+        '@tabletS': { display: 'flex' },
         flow: 'y',
-        align: 'center flex-start',
+        align: 'stretch flex-start',
         gap: 'spacing3',
-        // Always present, so the 80px clearance also keeps the fixed TypeUI
-        // panel off the footage while the duel plays out.
-        padding: 'spacing3 spacing6 spacing20',
-        '@tabletS': { padding: 'spacing3 spacing4 spacing20' },
-
-        MobileCrowd: {
-          display: 'none',
-          '@tabletS': { display: 'block' },
-          width: 'dock',
-          maxWidth: '100%',
-          // Compact: head + stats only.
-          CrowdPanel: {
-            width: '100%',
-            theme: 'glass',
-            display: (el, s) => (s.screen === 'playing' && s.phase !== 'ended' ? 'flex' : 'none'),
-            Ticker: { display: 'none' },
-            FrozenNote: { display: 'none' }
-          }
+        width: '100%',
+        padding: '0 0 spacing20',
+        BetSheetBelow: {},
+        MobileLock: {
+          flow: 'x',
+          align: 'center center',
+          padding: 'spacing2 spacing4',
+          LockStamp: {}
         },
-        BetPanel: { maxWidth: '100%' }
+        MobileCentre: {
+          flow: 'y',
+          align: 'center flex-start',
+          padding: 'spacing2 spacing4',
+          gap: 'spacing3',
+          ResultsCard: {},
+          SessionSummary: {}
+        }
       }
     }
   }

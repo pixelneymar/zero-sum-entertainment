@@ -14,7 +14,6 @@ export const SessionSummary = {
   maxWidth: '94vw',
   textAlign: 'center',
   fontFamily: 'sans',
-  attr: { role: 'status' },
   display: (el, s) => (s.root.screen === 'playing' && s.root.phase === 'ended' ? 'flex' : 'none'),
 
   state: { ledger: [] },
