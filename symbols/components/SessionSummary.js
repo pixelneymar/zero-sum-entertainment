@@ -1,9 +1,11 @@
 // End of session (TypeUI section 5). Rounds and balance come straight from
 // state; the net and best multiplier are a UI-side ledger of the settlements
 // this component saw (each settlement is the server's; nothing here decides
-// a payout). A raised card with four inset stat tiles and two actions.
+// a payout). It floats over the footage, so it sits on the navy stage glass
+// (body text stays 4.5:1 over a white frame) with four inset stat tiles.
 export const SessionSummary = {
-  extends: 'CkCard',
+  extends: 'CkStageGlass',
+  shadow: 'shadowXl',
   flow: 'y',
   align: 'stretch flex-start',
   gap: 'spacing6',
@@ -44,9 +46,10 @@ export const SessionSummary = {
     SummaryKicker: { extends: 'CkEyebrow', text: '{{ sessionKicker | polyglot }}' },
     SummaryTitle: {
       tag: 'h2',
-      fontSize: 'font3xl',
+      fontSize: 'fontXl',
+      '@mobileL': { fontSize: 'fontMd' },
       lineHeight: '1.3',
-      fontWeight: '600',
+      fontWeight: '500',
       color: 'heading',
       margin: '0',
       text: (el, s) => (s.root.game ? s.root.game.title : '')
@@ -75,7 +78,7 @@ export const SessionSummary = {
         },
         color: (el, s) => {
           const net = (s.ledger || []).reduce((sum, r) => sum + r.net, 0)
-          return net > 0 ? 'fgSuccess' : net < 0 ? 'fgDanger' : 'heading'
+          return net > 0 ? 'fgSuccessStrong' : net < 0 ? 'fgDanger' : 'heading'
         }
       },
       StatLabel: { text: '{{ statNet | polyglot }}' }
@@ -121,9 +124,13 @@ export const SessionSummary = {
   }
 }
 
-// Inset stat tile (cards.md inset card): same raised surface, own ink border.
+// Inset stat tile: a small glass tile (radius 10) inside the summary card.
 export const SessionStat = {
   extends: 'CkCard',
+  // Inside an already-blurred panel: no second blur layer.
+  backdropFilter: 'none',
+  round: 'radiusDefault',
+  shadow: 'shadowXs',
   flow: 'y',
   align: 'center center',
   gap: 'spacing1',
@@ -133,11 +140,12 @@ export const SessionStat = {
 
   StatValue: {
     tag: 'span',
-    fontFamily: 'mono',
+    fontFamily: 'sans',
     fontSize: 'font3xl',
     lineHeight: '1',
-    fontWeight: '700',
+    fontWeight: '600',
     color: 'heading'
   },
-  StatLabel: { extends: 'CkEyebrow' }
+  // Heading colour: bodySubtle falls to 4.3:1 over a white frame here.
+  StatLabel: { extends: 'CkEyebrow', color: 'heading' }
 }

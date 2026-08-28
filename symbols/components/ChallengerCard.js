@@ -1,36 +1,38 @@
 // One side of the duel, as a pick. Child of BetPanel.Sides via
 // childrenAs: 'state': `s.side`, `s.name`, `s.line`, `s.poster` are the
 // challenger; `s.root` is the app state. A tap selects; PLACE BET commits.
-// Inset card (cards.md): raised surface, own 2px ink border. Selected = ink
-// fill + white label + a check/dot icon + aria-pressed (never colour alone).
-// Once the bet is in, the backed card stays selected and the other is
-// disabled (native disabled, 55% opacity: ink at 55% on beige is 3.56:1).
+// Inner glass card (cards.md interactive) with a white 30% control boundary
+// (fundamentals: 3:1). Selected = brand fill + white label + a check/dot
+// icon + aria-pressed (never colour alone). Once the bet is in, the backed
+// card stays selected and the other is natively disabled at 55% opacity.
 const canPick = (root) => !root.myBet && (root.phase === 'preview' || root.phase === 'betting')
 const isChosen = (root, side) => (root.myBet ? root.myBet.side === side : root.mySide === side)
 
 export const ChallengerCard = {
-  extends: 'CkCard',
+  extends: 'CkCardInteractive',
   tag: 'button',
+  round: 'radiusDefault',
+  borderColor: 'paper.40',
+  shadow: 'shadowXs',
   flow: 'x',
   align: 'center flex-start',
-  gap: 'spacing3',
+  gap: 'spacing2_5',
   flex: '1',
   minWidth: '0',
-  padding: 'spacing3',
+  padding: 'spacing4',
   fontFamily: 'sans',
   textAlign: 'left',
   cursor: 'pointer',
-  transition: 'background-color .15s ease, color .15s ease, border-color .15s ease, box-shadow .15s ease',
+  transition: 'background-color .2s ease-out, color .2s ease-out, border-color .2s ease-out, box-shadow .2s ease-out, transform .2s ease-out',
   '@reducedMotion': { transition: 'none' },
-  // Transparent inside the glass dock so the footage stays visible; the
-  // dock tint alone keeps ink text at 6.9:1 worst case.
-  background: (el, s) => (isChosen(s.root, s.side) ? 'brandInk' : 'transparent'),
-  color: (el, s) => (isChosen(s.root, s.side) ? 'paper' : 'body'),
-  opacity: (el, s) => (s.root.myBet && s.root.myBet.side !== s.side ? '.55' : '1'),
-  ':hover': { borderColor: 'darkStrong', boxShadow: 'elevation1' },
-  ':disabled': { cursor: 'not-allowed', boxShadow: 'none' },
-  // brand-medium ring: 3.8:1 on beige, 3.57:1 on the ink selected fill.
-  ':focus-visible': { outline: 'spacing0_5 solid brandInkMedium', outlineOffset: 'spacing0_5' },
+  // A theme function: with a theme set, the runtime ignores a background
+  // function, so the whole surface swaps theme (glass <-> brandFill).
+  // Not backed once the bet is in: the spec disabled surface (3.6:1), never
+  // a stacked opacity.
+  theme: (el, s) => (isChosen(s.root, s.side) ? 'brandFill' : s.root.myBet ? 'disabledCtl' : 'glass'),
+  ':hover': { shadow: 'shadowSm', transform: 'translateY(-2px)' },
+  ':disabled': { cursor: 'not-allowed', shadow: 'none', transform: 'none' },
+  ':focus-visible': { outline: 'spacing0_5 solid paper', outlineOffset: 'spacing0_5' },
   attr: {
     type: 'button',
     'aria-pressed': (el, s) => (isChosen(s.root, s.side) ? 'true' : 'false'),
@@ -49,7 +51,7 @@ export const ChallengerCard = {
     flexShrink: '0',
     round: 'radiusFull',
     objectFit: 'cover',
-    background: 'neutralQuaternary',
+    background: 'neutralPrimaryMedium',
     borderWidth: 'spacing0_5',
     borderStyle: 'solid',
     borderColor: 'currentColor',
@@ -73,7 +75,7 @@ export const ChallengerCard = {
       tag: 'span',
       fontSize: 'fontLg',
       lineHeight: '1.3',
-      fontWeight: '600',
+      fontWeight: '500',
       whiteSpace: 'nowrap',
       overflow: 'hidden',
       textOverflow: 'ellipsis',
@@ -82,7 +84,7 @@ export const ChallengerCard = {
 
     Line: {
       tag: 'span',
-      fontSize: 'fontSm',
+      fontSize: 'fontMd',
       lineHeight: '1.3',
       whiteSpace: 'nowrap',
       overflow: 'hidden',

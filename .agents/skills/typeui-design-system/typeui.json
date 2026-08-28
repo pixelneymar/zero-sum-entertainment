@@ -1,36 +1,45 @@
 {
   "schemaVersion": 1,
   "source": "workspace-visual-schema",
-  "name": "Cypherpunk",
-  "slug": "cypherpunk",
+  "name": "Perspective",
+  "slug": "perspective",
   "project": {
-    "name": "Cypherpunk",
+    "name": "Perspective",
     "logoUrl": null
   },
   "importSource": {
     "type": "manual",
-    "importedAt": "2026-08-28T10:26:09.208Z",
-    "sourceName": "TypeUI design skill: Cypherpunk"
+    "importedAt": "2026-08-28T11:32:02.013Z",
+    "sourceName": "TypeUI design skill: Perspective"
   },
   "components": [
     "color",
     "typography",
+    "layout",
     "radius",
     "shadow",
+    "borders",
     "button",
     "button-group",
     "card",
+    "input",
     "alert",
     "badge",
-    "checkbox",
-    "radio",
-    "toggle",
+    "list",
+    "avatar",
+    "icon-shape",
     "accordion",
-    "tabs",
-    "pagination",
     "dropdown",
     "modal",
+    "tabs",
+    "table",
+    "pagination",
+    "sidebar",
+    "radio",
+    "checkbox",
+    "toggle",
     "tooltip",
-    "table"
+    "popovers",
+    "content"
   ]
 }

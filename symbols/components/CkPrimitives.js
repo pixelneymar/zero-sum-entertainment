@@ -1,36 +1,58 @@
-// TypeUI Cypherpunk primitives. Every game component extends one of these so
-// panel radius, border, surface, type and focus come from one spec chain
-// (.claude/skills/typeui-design-system/{buttons,cards,badges,typography}.md).
+// TypeUI Perspective primitives. Every game component extends one of these so
+// surface, blur, radius, border, shadow, type and focus come from one spec
+// chain (.claude/skills/typeui-design-system/{cards,buttons,badges,
+// typography,radius,shadows,borders}.md).
 // Fundamentals (typeui-fundamentals) override the skill where stricter:
-// interactive text is 16px (not 14px), targets are 44px, focus rings are
-// 2px with a 2px offset, eyebrows are 14px (not 12px).
-// letter-spacing and background-size take literal registry values because the
-// runtime does not route those properties through the named-size resolver.
+// 16px interactive text (spec base button is 14px), 44px targets, a 2px white
+// focus ring with a 2px offset (the spec's 4px brand-medium ring is ~1.2:1 on
+// navy), control boundaries at white 30% (border-default-medium is 1.17:1),
+// hover transitions at 200ms (spec 300ms, fundamentals 100-250ms). Buttons use
+// the spec's Large row (16px, 12x20) because the 16px label floor applies.
+// letter-spacing and background-size take literal values because the runtime
+// does not route those properties through the named-size resolver.
 
-// ---- overline / eyebrow (typography.md: overline role) ---------------------
+// ---- eyebrow / all-caps label (typography.md: 12-14px, 0.6px tracking) ----
 export const CkEyebrow = {
   tag: 'span',
-  fontFamily: 'mono',
+  fontFamily: 'sans',
   fontSize: 'fontSm',
   fontWeight: '500',
   lineHeight: '1.3',
-  letterSpacing: '0.0625rem',
+  letterSpacing: '0.0375rem',
   textTransform: 'uppercase',
   color: 'bodySubtle'
 }
 
-// ---- card (cards.md): raised beige, 2px ink border, 2px corners, no shadow
+// ---- glass card (cards.md): white 6% + blur, 1px white 10% edge, 16px, md
 export const CkCard = {
-  theme: 'raised',
-  borderWidth: 'spacing0_5',
+  theme: 'glass',
+  backdropFilter: 'blur(1rem) saturate(1.4)',
+  borderWidth: 'spacingPx',
   borderStyle: 'solid',
-  borderColor: 'borderDefault',
-  round: 'radiusXxl',
-  boxShadow: 'none',
+  borderColor: 'paper.10',
+  round: 'radiusBase',
+  shadow: 'shadowMd',
   padding: 'spacing6'
 }
 
-// ---- badge (badges.md): square, soft fill, content width -------------------
+// Interactive card: opacity up, one elevation step, 2px lift (cards.md).
+export const CkCardInteractive = {
+  extends: 'CkCard',
+  cursor: 'pointer',
+  transition: 'background-color .2s ease-out, box-shadow .2s ease-out, transform .2s ease-out, border-color .2s ease-out',
+  '@reducedMotion': { transition: 'none', ':hover': { transform: 'none' } },
+  ':hover': { background: 'paper.10', shadow: 'shadowLg', transform: 'translateY(-2px)' },
+  ':focus-visible': { outline: 'spacing0_5 solid paper', outlineOffset: 'spacing0_5' }
+}
+
+// Glass over the footage (theme.js stageGlass): navy tint at 85%.
+export const CkStageGlass = {
+  extends: 'CkCard',
+  theme: 'stageGlass',
+  shadow: 'shadowLg'
+}
+
+// ---- badge (badges.md): 12px/500, 2x6, radius 10, 1px border -------------
 export const CkBadge = {
   tag: 'span',
   display: 'inline-flex',
@@ -38,45 +60,40 @@ export const CkBadge = {
   alignSelf: 'flex-start',
   gap: 'spacing1',
   padding: 'spacing0_5 spacing1_5',
-  round: 'radiusXxl',
+  round: 'radiusDefault',
   theme: 'badgeNeutral',
+  borderWidth: 'spacingPx',
+  borderStyle: 'solid',
+  borderColor: 'borderDefault',
   fontFamily: 'sans',
   fontSize: 'fontXs',
   fontWeight: '500',
   lineHeight: '1.3',
   whiteSpace: 'nowrap',
-  boxShadow: 'none'
+  shadow: 'none'
 }
 
-// Large badge: 14px text, spacing-2 x spacing-1.
+// Large badge: 14px text, 4x8 padding.
 export const CkBadgeLg = {
   extends: 'CkBadge',
   padding: 'spacing1 spacing2',
   fontSize: 'fontSm'
 }
 
-// Bordered badge: 2px intent border (all intents resolve to ink).
-export const CkBadgeBordered = {
-  extends: 'CkBadge',
-  borderWidth: 'spacing0_5',
-  borderStyle: 'solid',
-  borderColor: 'borderDefault'
-}
-
-// ---- button shell (buttons.md, Base size) ----------------------------------
+// ---- button shell (buttons.md): 16px radius, 1px border, glint ------------
 export const CkButton = {
   tag: 'button',
   display: 'inline-flex',
   align: 'center center',
-  gap: 'spacing1_5',
+  gap: 'spacing2',
   boxSizing: 'border-box',
   minHeight: 'touchMin',
-  padding: 'spacing2_5 spacing4',
-  round: 'radiusXxl',
-  borderWidth: 'spacing0_5',
+  padding: 'spacing3 spacing5',
+  round: 'radiusBase',
+  borderWidth: 'spacingPx',
   borderStyle: 'solid',
   borderColor: 'transparent',
-  boxShadow: 'none',
+  shadow: 'buttonGlint',
   fontFamily: 'sans',
   fontSize: 'fontMd',
   fontWeight: '500',
@@ -87,48 +104,53 @@ export const CkButton = {
   flexShrink: '0',
   cursor: 'pointer',
   userSelect: 'none',
-  transition: 'background-color .15s ease, color .15s ease, border-color .15s ease',
-  '@reducedMotion': { transition: 'none' },
-  ':focus-visible': { outline: 'spacing0_5 solid brandInk', outlineOffset: 'spacing0_5' },
-  ':active': { transform: 'scale(.98)' }
-}
-
-// Small size (dashboard / HUD surfaces). Fundamentals keep the label at 16px.
-export const CkButtonSm = {
-  extends: 'CkButton',
-  padding: 'spacing2 spacing3'
+  transition: 'background-color .15s ease, color .15s ease, border-color .15s ease, box-shadow .15s ease',
+  '@reducedMotion': { transition: 'none', ':active': { transform: 'none' }, ':hover': { transform: 'none' } },
+  ':focus-visible': { outline: 'spacing0_5 solid paper', outlineOffset: 'spacing0_5' },
+  ':active': { transform: 'scale(.98)' },
+  // buttons.md disabled: disabled fill, fg-disabled text, no shadow, no glint.
+  ':disabled': {
+    background: 'disabled',
+    color: 'fgDisabled',
+    borderColor: 'borderDefaultMedium',
+    shadow: 'none',
+    cursor: 'not-allowed',
+    transform: 'none'
+  }
 }
 
 export const CkButtonPrimary = {
   extends: 'CkButton',
   theme: 'brandFill',
-  ':hover': { background: 'brandInkStrong' },
-  ':active': { background: 'brandInkStrong', transform: 'scale(.98)' },
-  // brand-medium ring: 3.57:1 against the ink fill, 4.2:1 against lime.
-  ':focus-visible': { outline: 'spacing0_5 solid brandInkMedium', outlineOffset: 'spacing0_5' }
+  // brand-strong equals brand in the dark registry, so the hover also lifts
+  // one elevation step and shows the white 30% edge (perceptible delta).
+  ':hover': { background: 'brandStrong', borderColor: 'paper.30', shadow: 'buttonGlintHover', transform: 'translateY(-1px)' },
+  ':active': { background: 'brandStrong', transform: 'translateY(0) scale(.98)' }
 }
 
 export const CkButtonSecondary = {
   extends: 'CkButton',
-  theme: 'raised',
-  borderColor: 'borderDefault',
-  ':hover': { background: 'neutralTertiaryMedium', color: 'heading' }
+  // white 40%: 4.4:1 boundary against the page (border-default-medium is 1.17:1).
+  theme: 'secondaryFill',
+  borderColor: 'paper.40',
+  ':hover': { background: 'neutralTertiaryMedium', color: 'heading', shadow: 'buttonGlintHover' }
 }
 
-export const CkButtonOutline = {
+// Ghost (buttons.md): no shadow, no glint.
+export const CkButtonGhost = {
   extends: 'CkButton',
   background: 'transparent',
-  color: 'fgBrand',
-  borderColor: 'brandInk',
-  ':hover': { background: 'brandInk', color: 'paper' }
+  color: 'heading',
+  shadow: 'none',
+  ':hover': { background: 'neutralSecondaryMedium' }
 }
 
-// ---- inline text link (SKILL.md / typography.md): ink, underline on hover
+// ---- link (typography.md): fg-brand, underlined, hover removes underline --
 export const CkLink = {
   tag: 'a',
   display: 'inline-flex',
   align: 'center center',
-  gap: 'spacing1_5',
+  gap: 'spacing2',
   minHeight: 'touchMin',
   padding: 'spacing2 spacing3',
   fontFamily: 'sans',
@@ -136,8 +158,9 @@ export const CkLink = {
   fontWeight: '500',
   lineHeight: '1.3',
   color: 'fgBrand',
-  textDecoration: 'none',
+  textDecoration: 'underline',
+  textUnderlineOffset: '0.2em',
   cursor: 'pointer',
-  ':hover': { textDecoration: 'underline' },
-  ':focus-visible': { outline: 'spacing0_5 solid brandInk', outlineOffset: 'spacing0_5' }
+  ':hover': { textDecoration: 'none' },
+  ':focus-visible': { outline: 'spacing0_5 solid paper', outlineOffset: 'spacing0_5' }
 }

@@ -32,6 +32,10 @@ export const main = {
       position: 'absolute',
       top: 'spacing6',
       right: 'spacing6',
+      flow: 'x',
+      align: 'center flex-end',
+      gap: 'spacing4',
+      BalanceChip: {},
       DemoBadge: {}
     },
 
@@ -51,20 +55,71 @@ export const main = {
   TypeuiPanel: {},
 
   // ---- the stage ----------------------------------------------------------
-  // A lime section (document theme) with the grid texture; a flush beige top
-  // bar (TypeUI section 3, application navbar); the framed 16:9 video centred
-  // in the remaining space; and a HUD layer of raised cards on top.
+  // A navy section (document theme) behind one blurred brand orb; a glass top
+  // bar; the framed 16:9 video centred in the remaining space; a HUD layer
+  // of stage-glass panels; and the bet dock in its own strip below.
   Stage: {
     display: (el, s) => (s.screen === 'playing' ? 'flex' : 'none'),
     flow: 'y',
     align: 'stretch flex-start',
     position: 'fixed',
     inset: '0 0 0 0',
-    overflow: 'hidden',
+    // Narrow viewports scroll: the footage keeps its height and the dock
+    // strip sits below it instead of squeezing it to nothing.
+    overflowX: 'hidden',
+    overflowY: 'auto',
     theme: 'document',
-    backgroundImage: 'gridTexture',
-    backgroundSize: '2rem 2rem',
-    backgroundPosition: 'left top',
+
+    // Atmosphere behind the glass (layout.md): one blurred brand orb.
+    StageOrb: {
+      position: 'absolute',
+      top: '-14rem',
+      right: '-10rem',
+      width: 'orb',
+      height: 'orb',
+      round: 'radiusFull',
+      background: 'orbBrand',
+      filter: 'blur(40px)',
+      opacity: '.6',
+      pointerEvents: 'none',
+      attr: { 'aria-hidden': 'true' }
+    },
+
+    // Screen-reader-only: the stage h1 and one live region that is always
+    // rendered (toggling role=status elements never announce).
+    StageTitle: {
+      tag: 'h1',
+      position: 'absolute',
+      width: 'spacingPx',
+      height: 'spacingPx',
+      overflow: 'hidden',
+      clipPath: 'inset(50%)',
+      whiteSpace: 'nowrap',
+      margin: '0',
+      text: (el, s) => (s.game ? s.game.title : '')
+    },
+    StageAnnouncer: {
+      tag: 'p',
+      attr: { role: 'status', 'aria-live': 'polite' },
+      position: 'absolute',
+      width: 'spacingPx',
+      height: 'spacingPx',
+      overflow: 'hidden',
+      clipPath: 'inset(50%)',
+      whiteSpace: 'nowrap',
+      margin: '0',
+      text: (el, s) => {
+        if (s.screen !== 'playing') return ''
+        if (s.phase === 'results' && s.settlement) {
+          if (s.settlement.voided) return s.voidTitle || 'Dead heat'
+          if (!s.myBet) return s.resultKicker || 'Result'
+          return s.settlement.iWon ? `${s.youWon || 'You won'} ${s.settlement.myPayout} ${s.chipsUnit || 'chips'}` : s.youLost || 'Not this time'
+        }
+        if (s.phase === 'locked') return s.betsLocked || 'Bets locked'
+        if (s.myBet) return s.betPlaced || 'Bet placed'
+        return ''
+      }
+    },
 
     TopBar: {
       tag: 'header',
@@ -75,10 +130,14 @@ export const main = {
       gap: 'spacing4',
       padding: 'spacing3 spacing6',
       '@tabletS': { padding: 'spacing3 spacing4' },
-      theme: 'raised',
-      borderBottomWidth: 'spacing0_5',
+      position: 'relative',
+      zIndex: '1',
+      theme: 'glass',
+      backdropFilter: 'blur(1rem) saturate(1.4)',
+      borderBottomWidth: 'spacingPx',
       borderBottomStyle: 'solid',
-      borderBottomColor: 'borderDefault',
+      borderBottomColor: 'paper.10',
+      shadow: 'shadowLg',
 
       TopLeft: {
         flow: 'x',
@@ -110,7 +169,9 @@ export const main = {
     },
 
     Body: {
+      tag: 'main',
       position: 'relative',
+      zIndex: '1',
       flex: '1',
       minHeight: '0',
       flow: 'y',
@@ -124,6 +185,7 @@ export const main = {
         minHeight: '0',
         flow: 'y',
         align: 'center center',
+        '@tabletS': { flex: '0 0 auto', minHeight: '56.25vw' },
 
         // Height-driven 16:9 frame: as wide as the screen height allows,
         // never wider than the viewport (then the footage letterboxes inside).
@@ -132,11 +194,12 @@ export const main = {
           width: 'auto',
           maxWidth: '100%',
           aspectRatio: '16 / 9',
-          background: 'darkStrong',
-          borderWidth: 'spacing0_5',
+          background: 'videoBlack',
+          borderWidth: 'spacingPx',
           borderStyle: 'solid',
-          borderColor: 'borderDefault',
-          round: 'radiusXxl',
+          borderColor: 'paper.10',
+          round: 'radiusBase',
+          shadow: 'shadowXl',
           overflow: 'hidden',
           VideoSurface: {}
         },
@@ -213,8 +276,6 @@ export const main = {
           CrowdPanel: {
             width: '100%',
             theme: 'glass',
-            backdropFilter: 'blur(1rem) saturate(1.2)',
-            shadow: 'glassEdge',
             display: (el, s) => (s.screen === 'playing' && s.phase !== 'ended' ? 'flex' : 'none'),
             Ticker: { display: 'none' },
             FrozenNote: { display: 'none' }

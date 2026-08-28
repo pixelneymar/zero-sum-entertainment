@@ -7,7 +7,7 @@ export const VideoSurface = {
   width: '100%',
   height: '100%',
   objectFit: 'contain',
-  background: 'darkStrong',
+  background: 'videoBlack',
 
   src: (el, s) => (s.game && s.game.videoSrc) || null,
 

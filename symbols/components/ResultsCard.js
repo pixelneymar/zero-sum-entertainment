@@ -5,6 +5,8 @@
 //   PlainCard neutral: no bet, or a voided duel. Just who won.
 // Every number comes from the server's settlement; this card decides nothing.
 // Intent colour is never the only cue: icon + label carry the meaning too.
+// Panels are alert-intent surfaces (alerts.md) at the modal elevation
+// (shadows.md shadow-xl) because they float over the footage.
 export const ResultsCard = {
   flow: 'y',
   align: 'center center',
@@ -14,6 +16,7 @@ export const ResultsCard = {
   WinCard: {
     extends: 'CkResultCard',
     theme: 'badgeSuccess',
+    borderColor: 'borderSuccessSubtle',
     animation: 'popIn .25s ease-out both',
     '@reducedMotion': { animation: 'none' },
     display: (el, s) => (s.settlement && s.settlement.iWon ? 'flex' : 'none'),
@@ -35,10 +38,10 @@ export const ResultsCard = {
       '@reducedMotion': { animation: 'none' },
       WinValue: {
         tag: 'span',
-        fontFamily: 'mono',
-        fontSize: 'font9xl',
+        fontFamily: 'sans',
+        fontSize: 'font6xl',
         lineHeight: '1',
-        fontWeight: '700',
+        fontWeight: '600',
         letterSpacing: '-0.0625rem',
         text: (el, s) => (s.settlement ? `+${(s.settlement.myPayout ?? 0).toLocaleString('en-US')}` : '')
       },
@@ -48,7 +51,7 @@ export const ResultsCard = {
     WinLine: {
       tag: 'span',
       fontSize: 'fontMd',
-      lineHeight: '1.5',
+      lineHeight: '1.625',
       fontWeight: '500',
       text: (el, s) => {
         if (!s.settlement || !s.result || s.result.winner == null) return ''
@@ -64,6 +67,7 @@ export const ResultsCard = {
   LossCard: {
     extends: 'CkResultCard',
     theme: 'badgeDanger',
+    borderColor: 'borderDangerSubtle',
     animation: 'riseIn .2s ease-out both',
     '@reducedMotion': { animation: 'none' },
     display: (el, s) => (s.myBet && s.settlement && !s.settlement.iWon && !s.settlement.voided ? 'flex' : 'none'),
@@ -85,10 +89,10 @@ export const ResultsCard = {
       '@reducedMotion': { animation: 'none' },
       LossValue: {
         tag: 'span',
-        fontFamily: 'mono',
-        fontSize: 'font9xl',
+        fontFamily: 'sans',
+        fontSize: 'font6xl',
         lineHeight: '1',
-        fontWeight: '700',
+        fontWeight: '600',
         letterSpacing: '-0.0625rem',
         text: (el, s) => (s.myBet ? `-${(s.myBet.stake ?? 0).toLocaleString('en-US')}` : '')
       },
@@ -98,7 +102,7 @@ export const ResultsCard = {
     LossLine: {
       tag: 'span',
       fontSize: 'fontMd',
-      lineHeight: '1.5',
+      lineHeight: '1.625',
       fontWeight: '500',
       text: (el, s) => {
         if (!s.result || s.result.winner == null || !s.myBet || !s.settlement) return ''
@@ -116,7 +120,8 @@ export const ResultsCard = {
 
   PlainCard: {
     extends: 'CkResultCard',
-    theme: 'badgeNeutral',
+    theme: 'badgeBrand',
+    borderColor: 'borderBrandSubtle',
     animation: 'fadeIn .2s ease-out both',
     '@reducedMotion': { animation: 'none' },
     display: (el, s) => (s.settlement && (!s.myBet || s.settlement.voided) ? 'flex' : 'none'),
@@ -125,12 +130,12 @@ export const ResultsCard = {
 
     PlainTitle: {
       tag: 'span',
-      fontFamily: 'mono',
+      fontFamily: 'sans',
       fontSize: 'font5xl',
       lineHeight: '1',
-      fontWeight: '700',
+      fontWeight: '600',
       letterSpacing: '-0.0625rem',
-      color: 'heading',
+      color: 'inherit',
       text: (el, s) => {
         if (!s.result || s.result.winner == null) return ''
         if (s.result.winner === 0) return s.voidTitle || 'Dead heat'
@@ -142,7 +147,7 @@ export const ResultsCard = {
     PlainLine: {
       tag: 'span',
       fontSize: 'fontMd',
-      lineHeight: '1.5',
+      lineHeight: '1.625',
       text: (el, s) => {
         if (!s.settlement) return ''
         if (s.settlement.voided) return s.voidNote || ''
@@ -158,6 +163,10 @@ export const ResultsCard = {
 // fill and text come from the alert intent (alerts.md expanded variant).
 export const CkResultCard = {
   extends: 'CkCard',
+  // The panels animate a transform over the <video>; Chrome mis-composites
+  // an animated transform together with a backdrop-filter, so none here.
+  backdropFilter: 'none',
+  shadow: 'shadowXl',
   flow: 'y',
   align: 'center flex-start',
   gap: 'spacing3',
@@ -176,9 +185,9 @@ export const ResultScores = {
   flexWrap: 'wrap',
   width: '100%',
   paddingTop: 'spacing3',
-  borderTopWidth: 'spacing0_5',
+  borderTopWidth: 'spacingPx',
   borderTopStyle: 'solid',
-  borderTopColor: 'borderDefault',
+  borderTopColor: 'paper.10',
   fontSize: 'fontMd',
   lineHeight: '1.5',
   fontVariantNumeric: 'tabular-nums',
@@ -213,7 +222,7 @@ export const ScoreChip = {
     attr: { 'aria-hidden': 'true' },
     display: (el, s) => (s.isWinner ? 'block' : 'none')
   },
-  Name: { tag: 'span', fontWeight: '700', text: (el, s) => s.name },
+  Name: { tag: 'span', fontWeight: '600', text: (el, s) => s.name },
   Dot: { tag: 'span', text: '·', attr: { 'aria-hidden': 'true' } },
   Off: { tag: 'span', text: (el, s) => `${s.offset} ${s.unit} ${s.root.offWord || 'off'}` }
 }

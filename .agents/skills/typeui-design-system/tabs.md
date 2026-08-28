@@ -1,134 +1,65 @@
-# Tabs — TypeUI · Cypherpunk
+# Tabs
 
-> **TypeUI · Cypherpunk** — section switching and supplementary navigation.
-> Depends on: `colors.md`, `radius.md`, `spacing.md`, `typography.md`
+> Dependencies: `colors.md`, `radius.md`, `shadows.md`
 
-Tabs split content into mutually exclusive panels or route-level navigation. Cypherpunk ships three flavors — a soft-filled **default**, a clean **underline**, and **pills** — and the active tab always speaks in `fg-brand`. The default and pill variants take the signature **tight** (`radius-xxl`, 2px) shell; underline stays minimal with a 2px brand rule. Keep tab bars short and single-level; past ~7 tabs, move to an overflow menu.
+## Core Specs
 
----
-
-## Anatomy
-
-| Part | Role |
-|---|---|
-| **Tab list** | Row or column of tab triggers |
-| **Tab** | Selectable label (link or button) |
-| **Indicator** | Background fill or underline showing active tab |
-| **Panel** | Content region tied to active tab |
-| **Icon** | Optional leading glyph in tab label |
-
----
-
-## Typography
-
-| Element | Size | Weight | Line height | Color |
-|---|---|---|---|---|
-| Tab label | font-size-sm | font-weight-medium | line-height-component | See states |
-| Panel body | font-size-sm | font-weight-normal | line-height-body | `body` |
-| Panel emphasis | font-size-sm | font-weight-medium | line-height-body | `heading` |
-
----
-
-## Layout
-
-| Property | Token / value |
-|---|---|
-| Tab padding | `spacing-4` all sides (default variant) |
-| Gap between tabs | `spacing-2` |
-| List bottom border | 2px `default` (underline / default variants) |
-| Panel padding | `spacing-4` |
-| Panel gap below list | flush — panel abuts list or shares border |
-| Icon size | 16 × 16px |
-| Icon gap | `spacing-2` |
-| Full-width tabs | Equal flex columns; each tab `width: 100%` of column |
-
----
+- Typography: 14px, medium weight, body color
+- Transitions: all properties, 200ms
 
 ## Variants
 
-### Default (filled active)
+### 1. Underline (Default)
 
-| State | Text | Background |
-|---|---|---|
-| Active | `fg-brand` | `neutral-secondary-soft` |
-| Inactive | `body` | transparent |
-| Hover | `heading` | `neutral-secondary-soft` |
-| Disabled | `fg-disabled` | transparent; no pointer |
+**Wrapper:** bottom border, border-default
 
-The active tab rounds its top corners at `radius-xxl`; the list carries a `default` bottom border.
+**Tab Item:**
+- Padding: 16px horizontal, 16px vertical
+- Bottom border: 2px, transparent
+- Top corners: 16px radius
+- Transition: colors, 150ms
 
-### Underline
+| State | Appearance |
+|---|---|
+| Active | fg-brand text, border-brand bottom border |
+| Inactive | transparent bottom border; hover → heading text, border-default-strong bottom border |
+| Disabled | fg-disabled text, not-allowed cursor |
 
-| State | Text | Bottom border |
-|---|---|---|
-| Active | `fg-brand` | 2px `brand` |
-| Inactive | `body` | transparent |
-| Hover | `fg-brand` | 2px `brand-subtle` |
-| Disabled | `fg-disabled` | none |
+### 2. Pills
 
-Negative-margin trick: the tab list overlaps the container's bottom border by 2px so the active underline meets the list edge.
+**Tab Item:**
+- Padding: 16px horizontal, 10px vertical
+- Radius: 16px (base)
+- Font weight: medium
+- Transition: all, 200ms
 
-### Pills
+| State | Appearance |
+|---|---|
+| Active | brand background, white text, shadow-sm |
+| Inactive | body text; hover → neutral-secondary-soft background, heading text |
+| Disabled | fg-disabled text, not-allowed cursor |
 
-| State | Text | Background |
-|---|---|---|
-| Active | `heading` | `brand` |
-| Inactive | `body` | transparent |
-| Hover | `heading` | `neutral-secondary-soft` |
-| Disabled | `fg-disabled` | transparent |
+### 3. Full Width
 
-Inactive/hover and active pills both use `radius-xxl`; the active pill takes the brand fill.
+Children overlap with -1px left margin on all except first.
 
-### With icons
+**Tab Item:**
+- Full width, centered text
+- Padding: 16px horizontal, 16px vertical
+- Background: neutral-primary-soft
+- Border: 1px, border-default
+- Transition: colors, 150ms
+- Hover: neutral-secondary-medium background, heading text
 
-Underline or default styling plus a 16px leading icon; the icon inherits the tab text color and shifts to `fg-brand` on group-hover.
+| State | Appearance |
+|---|---|
+| Active | neutral-secondary-soft background, fg-brand text |
+| First item | rounded start (16px) |
+| Last item | rounded end (16px) |
 
-### Vertical
+## Tabs with Icons
 
-A tab list column at the inline start (~256px wide), items full-width of the column, panels at the inline end — same state tokens as the underline variant.
-
-### Full width
-
-Tabs stretch evenly across the container — for marketing or settings with few tabs.
-
-### Interactive (panel switching)
-
-Tab triggers are **buttons** with `role="tab"`; one **panel** shows at a time (`role="tabpanel"`), and inactive panels leave both view and tab order (`hidden`/`display:none`). The active underline variant uses a 2px `brand` bottom border; inactive tabs are transparent. The panel container is `spacing-4` padding, `radius-xxl`, on `neutral-secondary-soft`.
-
----
-
-## States reference
-
-| State | Default | Underline | Pills |
-|---|---|---|---|
-| Active | brand text + soft bg | brand text + brand border | `heading` on brand |
-| Hover | heading + soft bg | brand text + subtle border | heading + soft bg |
-| Disabled | fg-disabled | fg-disabled | fg-disabled |
-
----
-
-## Motion
-
-150ms color/background/border on tab change. Panel swap is instant or a 150ms opacity fade — no sliding panels unless a product spec adds it.
-
----
-
-## Accessibility
-
-- Tab list: `role="tablist"`.
-- Tab: `role="tab"`, `aria-selected="true|false"`, `aria-controls="{panelId}"`.
-- Panel: `role="tabpanel"`, `aria-labelledby="{tabId}"`.
-- Arrow keys Left/Right (or Up/Down for vertical) move between tabs.
-- Disabled tabs: `aria-disabled="true"`, excluded from activation.
-- URL-based tabs use real `href`s — no fake buttons.
-
----
-
-## Prohibited
-
-- **No mixing pill and underline styles** in one tab list — pick one flavor.
-- **No more than ~7 tabs** in a row without an overflow menu.
-- **No nested tab bars** at the same hierarchy level.
-- **No tab labels in ALL CAPS** — sentence case.
-- **No hiding the only panel heading** — the tab names the section; the panel may repeat it for context.
-- **No raw colors or spacing**, and no framework class/data-attribute names — foundation tokens only.
+- Icon size: 16x16px or 20x20px
+- Spacing: 8px right margin
+- Layout: inline-flex, centered
+- Icons inherit the text color of the tab state

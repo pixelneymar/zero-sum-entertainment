@@ -2,6 +2,7 @@
 // audioCue). 44px icon button with aria-pressed; the preference persists.
 export const SoundToggle = {
   extends: 'CkButtonSecondary',
+  round: 'radiusFull',
   padding: '0',
   width: 'touchMin',
   height: 'touchMin',
@@ -9,7 +10,7 @@ export const SoundToggle = {
   attr: {
     type: 'button',
     'aria-pressed': (el, s) => (s.sound === false ? 'false' : 'true'),
-    'aria-label': (el, s) => (s.sound === false ? 'Sound off' : 'Sound on')
+    'aria-label': (el, s) => (s.sound === false ? s.soundOff || 'Sound off' : s.soundOn || 'Sound on')
   },
   onClick: (e, el) => el.call('toggleSound'),
 

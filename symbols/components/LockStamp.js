@@ -5,6 +5,10 @@
 export const LockStamp = {
   extends: 'CkCard',
   theme: 'brandFill',
+  // Animated transform over the <video>: no backdrop-filter (Chrome bug).
+  backdropFilter: 'none',
+  borderColor: 'paper.30',
+  shadow: 'shadowXl',
   flow: 'y',
   align: 'center center',
   gap: 'spacing2',
@@ -23,15 +27,14 @@ export const LockStamp = {
     Icon: { name: 'lock', boxSize: 'icon20', attr: { 'aria-hidden': 'true' } },
     StampWord: {
       tag: 'span',
-      fontFamily: 'mono',
+      fontFamily: 'sans',
       fontSize: 'font5xl',
       lineHeight: '1',
-      fontWeight: '700',
-      letterSpacing: '0.1rem',
-      textTransform: 'uppercase',
+      fontWeight: '600',
+      letterSpacing: '-0.025rem',
       text: '{{ lockedStamp | polyglot }}'
     }
   },
 
-  StampNote: { tag: 'span', fontSize: 'fontMd', lineHeight: '1.5', text: '{{ lockedPromise | polyglot }}' }
+  StampNote: { tag: 'span', fontSize: 'fontMd', lineHeight: '1.625', text: '{{ lockedPromise | polyglot }}' }
 }

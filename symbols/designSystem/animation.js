@@ -35,12 +35,6 @@ export default {
     from: { opacity: '0' },
     to: { opacity: '1' }
   },
-  // Countdown numeral under five seconds (1 Hz, well under the 3 Hz limit).
-  urgentBlink: {
-    '0%': { opacity: '1' },
-    '50%': { opacity: '.55' },
-    '100%': { opacity: '1' }
-  },
   // Workspace console charts.
   barGrow: {
     from: { transform: 'scaleY(0)' },

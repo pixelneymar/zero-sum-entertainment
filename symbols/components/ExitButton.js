@@ -1,8 +1,7 @@
 // Leave the stage. The engine tears the round down (backToPicker).
-// Small secondary button (buttons.md dashboard rule) with an outline icon.
+// Small secondary button (buttons.md) with an outline icon.
 export const ExitButton = {
   extends: 'CkButtonSecondary',
-  padding: 'spacing2 spacing3',
   attr: { type: 'button' },
   onClick: (e, el) => el.call('backToPicker'),
 

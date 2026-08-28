@@ -334,48 +334,73 @@ supabase storage cp --experimental symbols/assets/videos/banana.mp4 ss:///videos
 Round timings and results are in `docs/rounds.md`. They were read from the
 footage frame by frame. If a video is re-cut, re-verify every result.
 
-## Design system: TypeUI Cypherpunk (game surfaces)
+## Design system: TypeUI Perspective (game surfaces)
 
-The game (picker + stage) is styled with the purchased TypeUI design skill
-**Cypherpunk**. The binding specs are project-local skills:
+The game (picker + stage) is styled with the TypeUI design skill
+**Perspective**: a dark-first, glassmorphism, VR-gallery aesthetic. The
+binding specs are project-local skills:
 
-- `.claude/skills/typeui-design-system/*.md` (34 files; `colors.md`,
-  `typography.md`, `spacing.md`, `radius.md`, `shadows.md`, `buttons.md`,
-  `cards.md`, `badges.md`, `alerts.md` are the ones the game uses).
+- `.claude/skills/typeui-design-system/*.md` (27 files; `colors.md`,
+  `typography.md`, `layout.md`, `radius.md`, `shadows.md`, `borders.md`,
+  `buttons.md`, `cards.md`, `badges.md`, `alerts.md` are the ones the game
+  uses). Cypherpunk was the previous skill; it is gone.
 - `.claude/skills/typeui-fundamentals/*.md`: accessibility and UX guardrails.
-  They win over the design skill (44px targets, 16px interactive text, 2px
-  focus ring with 2px offset, computed contrast, reduced motion).
+  They win over the design skill.
 
-Signature: one lime section surface (`neutralSecondarySoft` #D8FF7C), ink
-text and 2px ink borders (`body`, `borderDefault` #1C1C1C), raised beige
-cards (`neutralPrimarySoft` #EAE5DB), 2px corners (`radiusXxl`), no resting
-shadows, Inter for UI and Space Mono for display type and eyebrows.
+Signature: navy surfaces (`neutralPrimary` #060B18, soft #0C1222, medium
+#131B2E), blue brand #0166FF, glass cards (white 6% + `blur(16px)
+saturate(1.4)`, 1px white 10% edge, 16px radius, shadow-md; interactive
+cards go to white 10% + shadow-lg + 2px lift), glint buttons (shadow-xs +
+inset highlight), Zalando Sans SemiExpanded, blurred atmosphere orbs, and a
+`perspective: 1200px` gallery with a tilted, mouse-parallaxed card grid.
+
+Documented deviations (fundamentals or product):
+
+| Rule | Why |
+| --- | --- |
+| Dark registry only (`globalTheme: 'dark'`) | the stage is footage; light glass over video fails contrast. Not a manual swap, a product exception. |
+| Focus ring 2px white + 2px offset (spec: 4px brand-medium) | brand-medium #0D2B66 is ~1.2:1 on navy. |
+| Control boundaries white 30% (spec: border-default-medium) | #1E293B on #131B2E is 1.17:1; fundamentals need 3:1. |
+| Stage overlays use `stageGlass` (navy 85% + blur), not white 6% | body text #94A3B8 must stay 4.5:1 over a white video frame. |
+| Button labels 16px (spec base 14px), hover 200ms (spec 300ms), body 1.6 (spec 1.7) | fundamentals floors and budgets. |
+| Challenger cards inside the 24px-padded dock use radius 10 | 16 - 24 cannot derive; spec small-control radius. |
+| No blink on the last five seconds (spec-free, product idea) | fundamentals forbid strobing content; the arc thickens and the caption reads Closing instead. |
+| Stamp and result panels carry no backdrop-filter | they animate a transform over the `<video>`; Chrome mis-composites the two together. |
+| Paragraph leading 1.7 (spec) | kept over the fundamentals 1.4-1.6 range after review: the spec value is explicit and within reading comfort. |
+| Error alert body 16px (spec alerts 14px) | fundamentals body-copy floor. |
+| Result panels keep opaque intent fills (spec glass) | alerts.md intents are opaque tokens and the panels animate over the video; blur is off on them. |
+| Card title to body 16px (fundamentals 32px) | spacing-principles card tier: 12-16px inside cards. |
+| Static badges on stage glass keep `border-default` | spec value; non-interactive, the text carries the meaning. |
 
 Implementation layer:
 
 | Where | What |
 | --- | --- |
-| `symbols/designSystem/color.js` | registry tokens in camelCase. The registry's `brand` family is `brandInk*` because `brand` (red) still belongs to the workspace. |
-| `symbols/designSystem/sizes.js` | `spacing*`, `radius*`, `font*` tokens. Named sizes resolve for ANY length property, which is how the 4px grid coexists with the letter sequence. |
-| `symbols/designSystem/theme.js` | `document`, `raised`, `brandFill`, `badge*`, `disabledCtl`. `chip`, `danger`, `ws*` are the workspace's. |
-| `symbols/designSystem/font.js`, `fontFamily.js`, `media.js` | Google Fonts imports, `sans`/`mono` families, the `@reducedMotion` media key. |
-| `symbols/components/CkPrimitives.js` | `CkCard`, `CkBadge*`, `CkButton*`, `CkLink`, `CkEyebrow`. Every game component extends one of these. |
-| `symbols/components/TypeuiPanel.js` | The fixed "TypeUI" pill the MCP setting `typeuiPanelEnabled` mandates. Turn it off in the TypeUI dashboard, not by deleting the component. |
+| `symbols/designSystem/color.js` | Perspective dark registry in camelCase; the workspace's red accent is `wsBrand` so `brand` is the Perspective token. |
+| `symbols/designSystem/sizes.js` | `spacing*`, `radius{Base,Default,Sm,Full}`, `font*` (h1 72 / 48 / 36 ...). Named sizes resolve for ANY length property. |
+| `symbols/designSystem/shadow.js` | the seven `shadow*` tokens plus `buttonGlint` / `buttonGlintHover`. |
+| `symbols/designSystem/theme.js` | `document`, `glass`, `stageGlass`, `brandFill`, `secondaryFill`, `badge*`, `disabledCtl`. `chip`, `danger`, `ws*` are the workspace's. |
+| `symbols/designSystem/gradient.js`, `font.js`, `fontFamily.js`, `media.js` | orbs, the Google Fonts import, the `sans` family, the `@reducedMotion` media key. |
+| `symbols/components/CkPrimitives.js` | `CkCard`, `CkCardInteractive`, `CkStageGlass`, `CkBadge*`, `CkButton*`, `CkLink`, `CkEyebrow`. Every game component extends one. |
+| `symbols/components/TypeuiPanel.js` | The fixed "TypeUI" pill the MCP setting `typeuiPanelEnabled` mandates. Turn it off in the TypeUI dashboard. |
 
 Runtime traps (verified): `letterSpacing`, `backgroundSize` and anything in
-`attr` are NOT run through the size resolver (use literal values); polyglot
+`attr` are NOT run through the size resolver (literal values); polyglot
 templates do not interpolate inside `attr`; an icon child must be named
-`Icon` or `extends: 'Icon'`; `outline: '2px solid currentColor'` compiles to
-a broken var, so focus rings use a colour token; `globalScope.js` edits can
-be served stale until the runner cache is deleted (see Symbols section).
+`Icon` or `extends: 'Icon'`; shadow tokens go through `shadow`, not
+`boxShadow`; `onMouseMove` is not wired (add a native listener in
+`onRender` and update through `el.state`, not the captured `s`); when a
+component has a `theme`, a `background` function is ignored (use a theme
+function); a `-` prefix only negates sequence letters, so negative insets
+need their own registered size (`spacing3Neg`); `globalScope.js` edits can
+be served stale until the runner cache is deleted.
 
-The bet dock is liquid glass (`theme: 'glass'` + `backdropFilter`), a
-documented exception so the footage stays visible; its ink text reads
-6.9:1 over a black frame. Do not animate a transform on it (Chrome
-mis-composites backdrop-filter over `<video>`).
+The bet dock lives in its own strip below the footage; the crowd/history
+rails and the result panels float over it on `stageGlass`. Do not animate
+a transform on any element with a backdrop-filter over the `<video>`
+(Chrome mis-composites it).
 
-The workspace console (`Ws*`) keeps its own dark palette; it is out of scope
-for the Cypherpunk restyle.
+The workspace console (`Ws*`) keeps its own dark palette; it is out of scope.
 
 Sound cues live in `globalScope.js` (`audioCue`, Web Audio, no assets):
 bet placed, lock, win, loss, dead heat. `audioOnPatch` listens to the same
@@ -384,8 +409,8 @@ state patches the engine writes; it never decides anything. The
 
 The TypeUI MCP section workflow (`typeui_start_ui_generation` ->
 `get_next_section` -> `report_section_cleanup`) loses its generation between
-calls after roughly a minute. File receipts back-to-back or keep the
-per-section cleanup loop local and document it.
+calls after roughly a minute. Keep the per-section cleanup loop local and
+document it.
 
 ## Workspace dashboard (`/workspace`)
 

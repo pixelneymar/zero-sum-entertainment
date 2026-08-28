@@ -448,7 +448,7 @@ export const videoOnError = () => {
   engineData.pendingSeek = resumeAt
   updateState({ game: Object.assign({}, s.game, { videoSrc: local }) })
   videoEnsureSrc()
-  flashError('Video stream unavailable — switched to the local copy.')
+  flashError('Video stream unavailable, switched to the local copy.')
 }
 
 export const videoPlay = () => {
@@ -955,7 +955,7 @@ export const demoSubmitBet = (side) => {
     return
   }
   if (d.balance < STAKE) {
-    flashError(`Not enough chips — a bet costs ${STAKE}.`)
+    flashError(`Not enough chips: a bet costs ${STAKE}.`)
     return
   }
   d.balance -= STAKE
@@ -996,7 +996,7 @@ export const demoRevealAttempt = (i, now) => {
   const result = { unit, attempts, winner }
   const settlement = demoSettle(d.book ? d.book.bets : [], d.userBet, winner)
   if (settlement.conserved === false) {
-    flashError('Settlement failed conservation — chips would be created or destroyed.')
+    flashError('Settlement failed conservation: chips would be created or destroyed.')
   }
   d.balance += settlement.voided && d.userBet ? d.userBet.stake : settlement.myPayout
   const human = storeRoundSettle(script, winner, settlement, now)

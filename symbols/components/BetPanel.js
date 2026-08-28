@@ -1,20 +1,16 @@
 // The bet dock (TypeUI section 4, widget). Two challenger cards: tap one, then
 // PLACE BET. The stake is standard (20 chips) and the bet is a side, nothing
 // more. Picks go through setSide, the bet through submitBet; the server is
-// the only judge. A liquid-glass widget card over the footage: the beige
-// tint at 72% plus a backdrop blur keeps the video visible and the ink
-// text readable (theme.js glass).
+// the only judge. A glass card (cards.md) in the dock strip below the footage.
 export const BetPanel = {
   extends: 'CkCard',
-  theme: 'glass',
-  backdropFilter: 'blur(1rem) saturate(1.2)',
-  shadow: 'glassEdge',
   tag: 'section',
   attr: { 'aria-label': 'Place your bet' },
   flow: 'y',
   align: 'stretch flex-start',
   gap: 'spacing4',
-  padding: 'spacing5',
+  padding: 'spacing6',
+  shadow: 'shadowLg',
   width: 'dock',
   maxWidth: '94vw',
   display: (el, s) =>
@@ -43,6 +39,7 @@ export const BetPanel = {
         fontFamily: 'sans',
         fontSize: 'fontXl',
         lineHeight: '1.3',
+        '@mobileL': { fontSize: 'fontMd' },
         fontWeight: '500',
         color: 'heading',
         margin: '0',
@@ -51,10 +48,9 @@ export const BetPanel = {
     },
 
     TargetChip: {
-      extends: 'CkBadgeBordered',
-      theme: 'badgeNeutral',
-      padding: 'spacing1 spacing2',
-      fontSize: 'fontSm',
+      extends: 'CkBadgeLg',
+      theme: 'badgeBrand',
+      borderColor: 'borderBrandSubtle',
       TargetText: { tag: 'span', text: (el, s) => (s.game ? s.game.targetLine : '') }
     }
   },
@@ -62,7 +58,8 @@ export const BetPanel = {
   Sides: {
     flow: 'x',
     align: 'stretch center',
-    gap: 'spacing3',
+    gap: 'spacing4',
+    perspective: '1000px',
     attr: { role: 'group', 'aria-label': 'Who lands closer?' },
     childrenAs: 'state',
     children: (el, s) => (s.game && s.game.challengers ? s.game.challengers : []),
@@ -106,16 +103,13 @@ export const BetPanel = {
 
     // Success state: icon + label + the backed side (badges.md success).
     PlacedRow: {
-      extends: 'CkBadgeBordered',
+      extends: 'CkBadgeLg',
       theme: 'badgeSuccess',
-      padding: 'spacing2 spacing3',
-      fontSize: 'fontMd',
-      gap: 'spacing1_5',
-      attr: { role: 'status', 'aria-live': 'polite' },
+      borderColor: 'borderSuccessSubtle',
       display: (el, s) => (s.myBet ? 'inline-flex' : 'none'),
 
-      Icon: { name: 'check', boxSize: 'icon16', attr: { 'aria-hidden': 'true' } },
-      PlacedLabel: { tag: 'span', fontWeight: '700', text: '{{ betPlaced | polyglot }}' },
+      Icon: { name: 'check', boxSize: 'icon14', attr: { 'aria-hidden': 'true' } },
+      PlacedLabel: { tag: 'span', fontWeight: '600', text: '{{ betPlaced | polyglot }}' },
       PlacedOn: {
         tag: 'span',
         text: (el, s) => {
@@ -138,8 +132,6 @@ export const BetPanel = {
         'aria-disabled': (el, s) => (s.phase === 'betting' && s.mySide && !s.myBet ? 'false' : 'true')
       },
       display: (el, s) => (s.myBet ? 'none' : 'inline-flex'),
-      opacity: (el, s) => (s.phase === 'betting' && s.mySide ? '1' : '.5'),
-      ':disabled': { cursor: 'not-allowed' },
       onClick: (e, el, s) => {
         if (s.myBet || s.phase !== 'betting') return
         // The server's place_bet is the only judge: a rejection surfaces via
@@ -159,16 +151,12 @@ export const BetPanel = {
     },
 
     LockedNote: {
-      extends: 'CkBadgeBordered',
+      extends: 'CkBadgeLg',
       theme: 'badgeAlt',
-      padding: 'spacing2 spacing3',
-      fontSize: 'fontMd',
-      gap: 'spacing1_5',
-      attr: { role: 'status' },
       display: (el, s) => (s.phase === 'locked' ? 'inline-flex' : 'none'),
 
-      Icon: { name: 'lock', boxSize: 'icon16', attr: { 'aria-hidden': 'true' } },
-      LockedText: { tag: 'span', fontWeight: '700', text: '{{ betsLocked | polyglot }}' }
+      Icon: { name: 'lock', boxSize: 'icon14', attr: { 'aria-hidden': 'true' } },
+      LockedText: { tag: 'span', fontWeight: '600', text: '{{ betsLocked | polyglot }}' }
     }
   }
 }

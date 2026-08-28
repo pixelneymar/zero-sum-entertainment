@@ -1,5 +1,6 @@
-// Dial that drains through each timed phase. Ink arc while betting, danger
-// arc plus a blinking danger numeral under five seconds, and a solid ink lock
+// Dial that drains through each timed phase. Brand arc while betting; under
+// five seconds the arc turns danger, thickens, and the caption reads Closing
+// (no flashing: fundamentals forbid strobing content); a solid brand lock
 // dial the instant the duel locks. The dial is a functionally round control
 // (radius.md), so it keeps radius-full. The betting window is the footage
 // before the lock frame (round.lockAt); the fixed phases mirror
@@ -24,12 +25,14 @@ export const PhaseTimer = {
     width: 'ring',
     height: 'ring',
     round: 'radiusFull',
-    borderWidth: 'spacing0_5',
+    borderWidth: 'spacingPx',
     borderStyle: 'solid',
-    borderColor: 'borderDefault',
+    borderColor: 'paper.30',
+    backdropFilter: 'blur(1rem) saturate(1.4)',
+    shadow: 'shadowMd',
     transition: 'background-color .15s ease, color .15s ease',
     '@reducedMotion': { transition: 'none' },
-    background: (el, s) => (s.phase === 'locked' ? 'brandInk' : 'neutralPrimarySoft'),
+    background: (el, s) => (s.phase === 'locked' ? 'brand' : 'neutralPrimary.85'),
     color: (el, s) => (s.phase === 'locked' ? 'paper' : 'heading'),
     attr: {
       role: 'timer',
@@ -51,26 +54,27 @@ export const PhaseTimer = {
       attr: { viewBox: '0 0 100 100', 'aria-hidden': 'true' },
       color: (el, s) => {
         if (s.phase === 'locked') return 'paper'
-        if (s.phase === 'betting' && (s.secondsLeft ?? 99) <= 5) return 'danger'
-        return 'brandInk'
+        if (s.phase === 'betting' && (s.secondsLeft ?? 99) <= 5) return 'fgDanger'
+        return 'fgBrand'
       },
 
       Track: {
         tag: 'circle',
-        opacity: '.18',
+        opacity: '.22',
         attr: { cx: '50', cy: '50', r: '44', fill: 'none', stroke: 'currentColor', 'stroke-width': '8' }
       },
 
       Arc: {
         tag: 'circle',
         transition: 'stroke-dashoffset 1s linear',
+        '@reducedMotion': { transition: 'none' },
         attr: {
           cx: '50',
           cy: '50',
           r: '44',
           fill: 'none',
           stroke: 'currentColor',
-          'stroke-width': '8',
+          'stroke-width': (el, s) => (s.phase === 'betting' && (s.secondsLeft ?? 99) <= 5 ? '12' : '8'),
           'stroke-linecap': 'butt',
           'stroke-dasharray': '276.46',
           'stroke-dashoffset': (el, s) => {
@@ -87,10 +91,10 @@ export const PhaseTimer = {
     Seconds: {
       tag: 'span',
       position: 'relative',
-      fontFamily: 'mono',
+      fontFamily: 'sans',
       fontSize: 'font3xl',
       lineHeight: '1',
-      fontWeight: '700',
+      fontWeight: '600',
       fontVariantNumeric: 'tabular-nums',
       text: (el, s) => String(Math.max(0, Math.ceil(s.secondsLeft ?? 0))),
       display: (el, s) =>
@@ -102,14 +106,12 @@ export const PhaseTimer = {
     UrgentSeconds: {
       tag: 'span',
       position: 'relative',
-      fontFamily: 'mono',
+      fontFamily: 'sans',
       fontSize: 'font3xl',
       lineHeight: '1',
-      fontWeight: '700',
+      fontWeight: '600',
       fontVariantNumeric: 'tabular-nums',
       color: 'fgDanger',
-      animation: 'urgentBlink 1s ease-in-out infinite',
-      '@reducedMotion': { animation: 'none' },
       text: (el, s) => String(Math.max(0, Math.ceil(s.secondsLeft ?? 0))),
       display: (el, s) =>
         s.phase === 'betting' && (s.secondsLeft ?? 99) <= 5 ? 'inline' : 'none'
@@ -130,7 +132,8 @@ export const PhaseTimer = {
     whiteSpace: 'nowrap',
 
     PreviewLabel: { tag: 'span', text: '{{ timerPreview | polyglot }}', display: (el, s) => (s.phase === 'preview' ? 'inline' : 'none') },
-    BettingLabel: { tag: 'span', text: '{{ timerBetting | polyglot }}', display: (el, s) => (s.phase === 'betting' ? 'inline' : 'none') },
+    BettingLabel: { tag: 'span', text: '{{ timerBetting | polyglot }}', display: (el, s) => (s.phase === 'betting' && (s.secondsLeft ?? 99) > 5 ? 'inline' : 'none') },
+    ClosingLabel: { tag: 'span', text: '{{ timerClosing | polyglot }}', color: 'fgDanger', display: (el, s) => (s.phase === 'betting' && (s.secondsLeft ?? 99) <= 5 ? 'inline' : 'none') },
     LockedLabel: { tag: 'span', text: '{{ timerLocked | polyglot }}', display: (el, s) => (s.phase === 'locked' ? 'inline' : 'none') },
     ResultsLabel: { tag: 'span', text: '{{ timerResults | polyglot }}', display: (el, s) => (s.phase === 'results' ? 'inline' : 'none') }
   }

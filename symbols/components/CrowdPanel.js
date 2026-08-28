@@ -4,13 +4,13 @@
 const frozenPhase = (s) => s.phase === 'locked' || s.phase === 'reveal' || s.phase === 'results'
 
 export const CrowdPanel = {
-  extends: 'CkCard',
+  extends: 'CkStageGlass',
   tag: 'section',
   attr: { 'aria-label': 'The crowd' },
   flow: 'y',
   align: 'stretch flex-start',
   gap: 'spacing4',
-  padding: 'spacing5',
+  padding: 'spacing6',
   width: 'rail',
   fontVariantNumeric: 'tabular-nums',
   display: (el, s) => (s.screen === 'playing' && s.phase !== 'ended' ? 'flex' : 'none'),
@@ -20,12 +20,22 @@ export const CrowdPanel = {
     align: 'center space-between',
     gap: 'spacing3',
 
-    CrowdTitle: { extends: 'CkEyebrow', text: '{{ crowdTitle | polyglot }}' },
+    // Widget heading (cards.md): 20px medium, heading colour.
+    CrowdTitle: {
+      tag: 'h2',
+      fontFamily: 'sans',
+      fontSize: 'fontXl',
+      lineHeight: '1.2',
+      fontWeight: '500',
+      color: 'heading',
+      margin: '0',
+      text: '{{ crowdTitle | polyglot }}'
+    },
 
     LiveBadge: {
       extends: 'CkBadge',
       theme: 'badgeBrand',
-      gap: 'spacing1_5',
+      borderColor: 'borderBrandSubtle',
       attr: { role: 'status' },
       display: (el, s) => (s.phase === 'preview' || s.phase === 'betting' ? 'inline-flex' : 'none'),
 
@@ -43,12 +53,11 @@ export const CrowdPanel = {
     },
 
     LockBadge: {
-      extends: 'CkBadgeBordered',
+      extends: 'CkBadge',
       theme: 'badgeAlt',
-      gap: 'spacing1',
       attr: { role: 'status' },
       display: (el, s) => (frozenPhase(s) ? 'inline-flex' : 'none'),
-      Icon: { name: 'lock', boxSize: 'icon14', attr: { 'aria-hidden': 'true' } },
+      Icon: { name: 'lock', boxSize: 'icon12', attr: { 'aria-hidden': 'true' } },
       LockWord: { tag: 'span', text: '{{ lockedBadge | polyglot }}' }
     }
   },
@@ -65,11 +74,12 @@ export const CrowdPanel = {
       PlayersLabel: { extends: 'CkEyebrow', text: '{{ playersLabel | polyglot }}' },
       PlayersValue: {
         tag: 'span',
-        fontFamily: 'mono',
+        fontFamily: 'sans',
         fontSize: 'font3xl',
         lineHeight: '1',
-        fontWeight: '700',
+        fontWeight: '600',
         color: 'heading',
+        fontVariantNumeric: 'tabular-nums',
         text: (el, s) => {
           const value = s.frozen && frozenPhase(s) ? s.frozen.playerCount : s.playerCount
           return (value ?? 0).toLocaleString('en-US')
@@ -89,10 +99,10 @@ export const CrowdPanel = {
         gap: 'spacing1',
         PotValue: {
           tag: 'span',
-          fontFamily: 'mono',
+          fontFamily: 'sans',
           fontSize: 'font3xl',
           lineHeight: '1',
-          fontWeight: '700',
+          fontWeight: '600',
           color: 'heading',
           text: (el, s) => {
             const value = s.frozen && frozenPhase(s) ? s.frozen.pot : s.pot
@@ -113,9 +123,9 @@ export const CrowdPanel = {
     margin: '0',
     padding: 'spacing3 0 0',
     listStyle: 'none',
-    borderTopWidth: 'spacing0_5',
+    borderTopWidth: 'spacingPx',
     borderTopStyle: 'solid',
-    borderTopColor: 'borderDefault',
+    borderTopColor: 'paper.10',
     attr: { 'aria-label': 'Arrivals' },
     display: (el, s) => (s.phase === 'preview' || s.phase === 'betting' ? 'flex' : 'none'),
     childrenAs: 'state',
@@ -129,11 +139,11 @@ export const CrowdPanel = {
     gap: 'spacing2',
     minHeight: 'spacing20',
     padding: 'spacing3 0 0',
-    borderTopWidth: 'spacing0_5',
+    borderTopWidth: 'spacingPx',
     borderTopStyle: 'solid',
-    borderTopColor: 'borderDefault',
+    borderTopColor: 'paper.10',
     fontSize: 'fontSm',
-    lineHeight: '1.5',
+    lineHeight: '1.6',
     color: 'body',
     display: (el, s) => (frozenPhase(s) ? 'flex' : 'none'),
     Icon: { name: 'lock', boxSize: 'icon16', flexShrink: '0', attr: { 'aria-hidden': 'true' } },

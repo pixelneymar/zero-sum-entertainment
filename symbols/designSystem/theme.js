@@ -1,41 +1,40 @@
 export default {
-  // ---- TypeUI Cypherpunk (colors.md): one lime section surface, ink text.
-  // The registry is single-theme, so both colour schemes resolve identically.
+  // ---- TypeUI Perspective (colors.md, cards.md): dark registry only ------
+  // Page background: neutral-primary-soft (colors.md semantic usage).
   document: {
-    '@light': { background: 'neutralSecondarySoft', color: 'body' },
-    '@dark': { background: 'neutralSecondarySoft', color: 'body' }
-  },
-
-  // Raised beige component surface (cards, panels, inputs, secondary buttons).
-  raised: {
     '@light': { background: 'neutralPrimarySoft', color: 'body' },
     '@dark': { background: 'neutralPrimarySoft', color: 'body' }
   },
 
-  // Liquid glass for overlays that sit on the footage (SKILL.md: a
-  // translucent fill must pair with a backdrop blur). Beige at 72% over a
-  // black frame composites to #A8A59E: ink text reads 6.9:1 worst case.
+  // Glass card (cards.md dark): white at 6% under a backdrop blur.
   glass: {
-    '@light': { background: 'neutralPrimarySoft.72', color: 'body' },
-    '@dark': { background: 'neutralPrimarySoft.72', color: 'body' }
+    '@light': { background: 'paper.06', color: 'body' },
+    '@dark': { background: 'paper.06', color: 'body' }
   },
 
-  // Primary action: ink fill, white label (buttons.md).
+  // Glass over the footage: a navy tint at 85% so body text stays 4.5:1 even
+  // over a white frame (spec white-glass would drop to ~3:1 there).
+  stageGlass: {
+    '@light': { background: 'neutralPrimary.85', color: 'body' },
+    '@dark': { background: 'neutralPrimary.85', color: 'body' }
+  },
+
+  // Primary action (buttons.md brand): blue fill, white label.
   brandFill: {
-    '@light': { background: 'brandInk', color: 'paper' },
-    '@dark': { background: 'brandInk', color: 'paper' }
+    '@light': { background: 'brand', color: 'paper' },
+    '@dark': { background: 'brand', color: 'paper' }
   },
 
-  // Status fills with a white label (buttons.md filled variants).
-  successFill: {
-    '@light': { background: 'success', color: 'paper' },
-    '@dark': { background: 'success', color: 'paper' }
+  // Secondary button fill (buttons.md secondary).
+  secondaryFill: {
+    '@light': { background: 'neutralSecondaryMedium', color: 'body' },
+    '@dark': { background: 'neutralSecondaryMedium', color: 'body' }
   },
 
-  // Badge / alert intents: soft fill + intent foreground (badges.md, alerts.md).
+  // Badge / alert intents (badges.md, alerts.md).
   badgeBrand: {
-    '@light': { background: 'brandInkSofter', color: 'fgBrandStrong' },
-    '@dark': { background: 'brandInkSofter', color: 'fgBrandStrong' }
+    '@light': { background: 'brandSofter', color: 'fgBrandStrong' },
+    '@dark': { background: 'brandSofter', color: 'fgBrandStrong' }
   },
   badgeAlt: {
     '@light': { background: 'neutralPrimarySoft', color: 'heading' },
@@ -57,27 +56,16 @@ export default {
     '@light': { background: 'warningSoft', color: 'fgWarning' },
     '@dark': { background: 'warningSoft', color: 'fgWarning' }
   },
+  badgeDark: {
+    '@light': { background: 'dark', color: 'paper' },
+    '@dark': { background: 'dark', color: 'paper' }
+  },
 
   // Disabled controls (colors.md): disabled surface + fg-disabled text.
   disabledCtl: {
     '@light': { background: 'disabled', color: 'fgDisabled' },
     '@dark': { background: 'disabled', color: 'fgDisabled' }
   },
-
-
-
-
-  chip: {
-    '@light': { background: 'white.08', color: 'white' },
-    '@dark': { background: 'white.08', color: 'white' }
-  },
-
-
-  danger: {
-    '@light': { background: 'ember', color: 'white' },
-    '@dark': { background: 'ember', color: 'white' }
-  },
-
 
   // ---- workspace console (always dark; no footage underneath) ----------
   wsShell: {

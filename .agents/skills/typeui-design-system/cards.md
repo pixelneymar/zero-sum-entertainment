@@ -1,158 +1,47 @@
-# Cards — TypeUI · Cypherpunk
+# Cards
 
-> **TypeUI · Cypherpunk** — the system's primary content surface.
-> Depends on: `colors.md`, `radius.md`, `shadows.md`, `spacing.md`, `typography.md`, `buttons.md`, `tabs.md`
+> Dependencies: `colors.md`, `radius.md`, `shadows.md`, `typography.md`
 
-The card is the face of Cypherpunk: a **raised `#EAE5DB` surface** (`neutral-primary-soft`) that stands on the lime section, with a **2px `default` (`#1C1C1C`) border**, **no shadow**, the signature **tight** (`radius-xxl`, 2px) corners, and generous `spacing-6` padding. A card never matches the lime section — it sits on top of it as a calm beige panel, set apart by its bold ink border, never a drop shadow. Cards do the bulk of the layout work — articles, products, profiles, pricing, dashboards — so they stay calm and let their content lead.
+## Core Specs
 
----
+- **Background:** translucent — `rgba(255,255,255,0.06)` in dark mode, `rgba(255,255,255,0.65)` in light mode
+- **Backdrop filter:** `blur(16px) saturate(1.4)`
+- **Border:** 1px, `rgba(255,255,255,0.10)` in dark mode, `rgba(255,255,255,0.50)` in light mode
+- **Radius:** 16px (base)
+- **Shadow:** shadow-md
+- **Perspective:** Cards should be rendered inside a CSS `perspective()` context when used in grid layouts to enable subtle 3D tilt and depth effects on hover
 
-## Anatomy
+## Card Heading
 
-| Part | Role |
-|---|---|
-| **Root** | Bordered, rounded surface |
-| **Media** | Optional top or side image |
-| **Header** | Title + optional meta |
-| **Body** | Description, lists, form fields |
-| **Footer** | Actions, links, meta row |
-| **Badge / tag** | Optional status label |
-| **Tabs** | Optional nav tabs in header (see `tabs.md`) |
+- Desktop: 20px, medium weight, heading color
+- Mobile: 16px, medium weight, heading color
+- Never skip heading levels — the page hierarchy must logically arrive at the card heading level.
 
----
+## States
 
-## Layout
+### Static Card (no interactivity)
+- Background: translucent (see Core Specs)
+- Backdrop filter: `blur(16px) saturate(1.4)`
+- Border: 1px, translucent white (see Core Specs)
+- Radius: 16px
+- Shadow: shadow-md
+- No hover styles. Non-interactive cards must NOT have hover background changes.
 
-| Property | Token / value |
-|---|---|
-| Background | Raised `neutral-primary-soft` (`#EAE5DB`) surface on the lime section |
-| Border | `default` (`#1C1C1C`), 2px — the only separation from the section |
-| Radius | `radius-xxl` (2px) |
-| Shadow | None (`elevation-none`) |
-| Padding (default) | `spacing-6` |
-| Max width | Content-driven (~384px for demo cards); full width in grids |
-| Gap title ↔ body | `spacing-3` |
-| Gap body ↔ footer actions | `spacing-6` |
-| Gap between footer buttons | `spacing-4` |
-| Hover (clickable card) | Border deepens toward `default-strong` — the background stays equal to the section; no fill shift, no shadow |
+### Interactive Card (clickable)
+- Same base styles as static card
+- Hover: increase background opacity slightly — `rgba(255,255,255,0.10)` dark / `rgba(255,255,255,0.80)` light
+- Hover: shadow-lg elevation step-up
+- Hover: subtle `transform: translateY(-2px)` lift or 3D tilt via `rotateX`/`rotateY` when inside a perspective container
+- Transition: all properties, 300ms ease-out
+- Cursor: pointer
 
-### Horizontal card
+## Rules
 
-Media column ~40% width; body column padded `spacing-6`; stacks vertically below the tablet breakpoint.
-
-### Image top
-
-Media bleeds to the top edge; its top corners follow the root `radius-xxl` and its bottom edge sits square against the body.
-
----
-
-## Typography
-
-Card titles stay quiet — `font-size-2xl` is the ceiling inside a standard card. Display type belongs to the page, not the card.
-
-| Element | Size | Weight | Line height | Color |
-|---|---|---|---|---|
-| Card title | font-size-2xl | font-weight-semibold | line-height-heading | `heading` |
-| Card subtitle / meta | font-size-sm | font-weight-normal | line-height-body | `body-subtle` |
-| Body | font-size-sm | font-weight-normal | line-height-body | `body` |
-| Footer link | font-size-sm | font-weight-medium | line-height-body | `fg-brand` |
-| Price / stat emphasis | font-size-xl | font-weight-bold | line-height-heading | `heading` |
-
----
-
-## Variants
-
-Every variant is the same shell — bordered, shadowless, section-aware surface, tight 2px corners — rearranged around its content.
-
-### Default
-
-Title + body; the whole card may be a single link.
-
-### With button
-
-Body plus a primary button (`buttons.md` base size) in the footer; an optional trailing icon on the button.
-
-### With text link
-
-The CTA is an `fg-brand` underlined link instead of a button — for lower-stakes follow-through.
-
-### With image
-
-Image above or beside the content; outer-edge radius rules still apply.
-
-### With description only
-
-Longer body copy at the same padding.
-
-### Horizontal
-
-Side-image layout for lists and featured entries.
-
-### User profile
-
-A circular avatar (64–96px) centered above the name, then role, a stats row, and action buttons; an optional dropdown menu in the corner.
-
-### With form
-
-Stacked inputs in the body and a submit button in the footer; field spacing `spacing-4`–`spacing-5`.
-
-### E-commerce
-
-Image, title, price, rating, add-to-cart — the price row uses the stat typography.
-
-### Call to action
-
-Centered copy and a single primary button; emphasis comes from a `brand` border, not a fill — the background still matches the section.
-
-### With tabs
-
-A tab strip in the header with panel content below; the tab model is delegated to `tabs.md`.
-
-### With list
-
-Icon + text rows in the body; list item padding `spacing-2`–`spacing-3`.
-
-### Pricing
-
-Tier name, price, feature list, and CTA — the highlighted tier is marked by a `brand` border (in place of the default `#1C1C1C`), never a different fill; its background still matches the section.
-
-### Testimonial
-
-Quote body, avatar, and author name — the quote may step up to `font-size-md`.
-
-### Crypto / stats
-
-A large metric, a delta badge, and a sparkline area — the badge follows `badges.md`.
-
----
-
-## Shadow & elevation
-
-Cards are flat — separation is read from the raised `#EAE5DB` surface and the `default` (`#1C1C1C`) border alone, never a shadow. The card background is always the raised `#EAE5DB` surface, standing on the lime section.
-
-| State | Surface |
-|---|---|
-| Resting | Raised `neutral-primary-soft` (`#EAE5DB`) surface + 2px `default` border |
-| Hover (interactive) | Background unchanged; border deepens toward `default-strong`; no shadow |
-| Inset card (inside another card) | Same raised `#EAE5DB` surface; its own `default` border is what reads it apart |
-
----
-
-## Accessibility
-
-- A clickable whole card is one link wrapping the card **or** a heading link plus distinct buttons — never nested interactive elements.
-- Images carry meaningful `alt`, or `alt=""` when decorative.
-- Tab cards follow the keyboard model in `tabs.md`.
-
----
-
-## Prohibited
-
-- **No corners other than `radius-xxl`** (2px) and no raw hex — a card that is rounded isn't an Cypherpunk card.
-- **No shadows on cards** — they are flat; separation comes from the `default` border and surface tone, not `elevation`.
-- **No borderless cards** — every card carries the 2px `default` (`#1C1C1C`) border; do not drop it and rely on a shadow.
-- **No card fill other than the raised surface** — the card background is always `neutral-primary-soft` (`#EAE5DB`); never match the lime section and never use a lighter, derived, or tinted fill. Separation is the raised `#EAE5DB` fill plus the 2px `default` border.
-- **No second or recolored card borders** — the border is the single 2px solid `default` (`#1C1C1C`) ink stroke; do not add a second border or swap it for another color.
-- **No full-width hero typography inside default cards** — that lives in the page section, not the card.
-- **No two competing primary CTAs** without hierarchy (one filled, one link).
-- **No framework class names** in specs.
+- Background: translucent glass — never use opaque solid fills for cards
+- Backdrop filter: `blur(16px) saturate(1.4)` — always present
+- Border: 1px, translucent white — reinforces the frosted-glass edge
+- Radius: 16px
+- Shadow: shadow-md (step up to shadow-lg on hover for interactive cards)
+- Interactive hover: increased opacity + elevation lift
+- Non-interactive: no hover styles
+- When cards are placed in a grid, wrap the grid in a `perspective: 1000px` container to enable 3D depth

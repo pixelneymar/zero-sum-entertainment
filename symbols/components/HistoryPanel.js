@@ -2,13 +2,13 @@
 // game). Collapsible widget; the open flag is this panel's own UI state,
 // never the app's.
 export const HistoryPanel = {
-  extends: 'CkCard',
+  extends: 'CkStageGlass',
   tag: 'section',
   attr: { 'aria-label': 'Last results' },
   flow: 'y',
   align: 'stretch flex-start',
   gap: 'spacing2',
-  padding: 'spacing2 spacing5 spacing5',
+  padding: 'spacing2 spacing6 spacing6',
   width: 'rail',
   display: (el, s) => (s.root.screen === 'playing' && s.root.phase !== 'ended' ? 'flex' : 'none'),
 
@@ -24,15 +24,28 @@ export const HistoryPanel = {
     width: '100%',
     minHeight: 'touchMin',
     background: 'transparent',
-    color: 'body',
+    color: 'heading',
     border: 'none',
-    padding: '0',
+    padding: '0 spacing2',
+    round: 'radiusDefault',
     fontFamily: 'sans',
     cursor: 'pointer',
-    ':focus-visible': { outline: 'spacing0_5 solid brandInk', outlineOffset: 'spacing0_5' },
+    transition: 'background-color .15s ease',
+    '@reducedMotion': { transition: 'none' },
+    ':hover': { background: 'neutralSecondaryMedium' },
+    ':focus-visible': { outline: 'spacing0_5 solid paper', outlineOffset: 'spacing0_5' },
     onClick: (e, el, s) => s.toggle('open'),
 
-    HistoryTitle: { extends: 'CkEyebrow', text: '{{ historyTitle | polyglot }}' },
+    // Button label: 16px medium, heading colour (fundamentals floor).
+    HistoryTitle: {
+      tag: 'span',
+      fontFamily: 'sans',
+      fontSize: 'fontMd',
+      lineHeight: '1.3',
+      fontWeight: '500',
+      color: 'heading',
+      text: '{{ historyTitle | polyglot }}'
+    },
     HistoryChevron: {
       extends: 'Icon',
       name: 'chevronDown',
@@ -65,7 +78,7 @@ export const HistoryPanel = {
   HistoryEmpty: {
     tag: 'span',
     fontSize: 'fontSm',
-    lineHeight: '1.5',
+    lineHeight: '1.6',
     color: 'bodySubtle',
     text: '{{ historyEmpty | polyglot }}',
     display: (el, s) => (s.open && !(s.root.history && s.root.history.length) ? 'inline' : 'none')

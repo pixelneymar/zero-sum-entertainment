@@ -2,7 +2,7 @@
 export const BalanceChip = {
   flow: 'x',
   align: 'baseline center',
-  gap: 'spacing1_5',
+  gap: 'spacing2',
   fontVariantNumeric: 'tabular-nums',
   whiteSpace: 'nowrap',
   color: 'body',
@@ -10,10 +10,11 @@ export const BalanceChip = {
   BalanceLabel: { extends: 'CkEyebrow', text: '{{ balanceLabel | polyglot }}' },
   BalanceValue: {
     tag: 'span',
-    fontFamily: 'mono',
+    fontFamily: 'sans',
     fontSize: 'font2xl',
+    fontVariantNumeric: 'tabular-nums',
     lineHeight: '1.3',
-    fontWeight: '700',
+    fontWeight: '600',
     color: 'heading',
     text: (el, s) => (s.balance ?? 0).toLocaleString('en-US')
   },

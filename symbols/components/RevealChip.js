@@ -1,17 +1,17 @@
 // Minimal chrome while the footage plays out: your locked pick, and, once the
 // first challenger's scale is read, that number, so the second attempt plays
-// as a real contest. An inline "announcement" alert (alerts.md): a badge plus
-// a message, neutral intent, 2px ink border.
+// as a real contest. A large brand badge (badges.md): 14px, radius 10, 1px
+// border-brand-subtle, with a dark badge (derived 6px radius) as the lead.
 export const RevealChip = {
   display: (el, s) => (s.screen === 'playing' && s.phase === 'reveal' ? 'inline-flex' : 'none'),
   align: 'center center',
   gap: 'spacing2',
   padding: 'spacing1 spacing2 spacing1 spacing1',
-  round: 'radiusXxl',
-  theme: 'badgeNeutral',
-  borderWidth: 'spacing0_5',
+  round: 'radiusDefault',
+  theme: 'badgeBrand',
+  borderWidth: 'spacingPx',
   borderStyle: 'solid',
-  borderColor: 'borderDefault',
+  borderColor: 'borderBrandSubtle',
   fontFamily: 'sans',
   fontSize: 'fontSm',
   lineHeight: '1.3',
@@ -21,10 +21,9 @@ export const RevealChip = {
 
   RevealBadge: {
     extends: 'CkBadge',
-    background: 'neutralQuaternary',
-    color: 'heading',
-    fontSize: 'fontSm',
-    padding: 'spacing0_5 spacing2',
+    theme: 'badgeDark',
+    borderColor: 'transparent',
+    round: 'radiusSm',
     Icon: { name: 'lock', boxSize: 'icon14', attr: { 'aria-hidden': 'true' } },
     RevealLead: { tag: 'span', text: '{{ revealWatching | polyglot }}' }
   },
@@ -48,7 +47,7 @@ export const RevealChip = {
 
   FirstAttempt: {
     tag: 'span',
-    fontWeight: '700',
+    fontWeight: '600',
     display: (el, s) => (s.result && s.result.attempts && s.result.attempts[0] ? 'inline' : 'none'),
     text: (el, s) => {
       const a = s.result && s.result.attempts ? s.result.attempts[0] : null

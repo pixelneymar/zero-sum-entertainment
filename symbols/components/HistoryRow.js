@@ -1,24 +1,26 @@
 // One past duel: who won and by what margins. Child state: a history entry
 // { roundIndex, winner, offsets: [o1, o2], unit }; s.root is the app state.
-// Flush list row with a 2px ink rule (tables.md flush data, radius none).
+// Flush list row with a 1px white 10% rule (tables.md flush data, radius none).
 export const HistoryRow = {
   tag: 'li',
   flow: 'x',
   align: 'center space-between',
   gap: 'spacing2',
   padding: 'spacing2 0',
-  borderBottomWidth: 'spacing0_5',
+  borderBottomWidth: 'spacingPx',
   borderBottomStyle: 'solid',
-  borderBottomColor: 'borderDefault',
+  borderBottomColor: 'paper.10',
   ':last-child': { borderBottomWidth: '0' },
   fontSize: 'fontSm',
-  lineHeight: '1.5',
+  lineHeight: '1.6',
   color: 'body',
   fontVariantNumeric: 'tabular-nums',
 
-  RoundTag: { tag: 'span', color: 'bodySubtle', text: (el, s) => `#${s.roundIndex}` },
+  // The index only distinguishes rows in server mode (demo rounds are all #1).
+  RoundTag: { tag: 'span', color: 'bodySubtle', display: (el, s) => (s.root.mode === 'server' ? 'inline' : 'none'), text: (el, s) => `#${s.roundIndex}` },
 
   WinnerText: {
+    color: 'heading',
     flow: 'x',
     align: 'center flex-start',
     gap: 'spacing1',
@@ -34,7 +36,7 @@ export const HistoryRow = {
     },
     WinnerName: {
       tag: 'span',
-      fontWeight: '700',
+      fontWeight: '600',
       whiteSpace: 'nowrap',
       overflow: 'hidden',
       textOverflow: 'ellipsis',

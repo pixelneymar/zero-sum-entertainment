@@ -1,11 +1,11 @@
 {
-  "designSystemId": "4b8414f8-03d6-4b10-8d6c-b16ba1dadd92",
+  "designSystemId": "5fc29393-9e4c-439e-87b3-4b5a02abd6dd",
   "installScope": "project",
-  "packageId": "633cc099-bd97-46c6-95a5-779c19322adc",
+  "packageId": "e7592757-9c89-4141-b15f-5e009992cb2f",
   "skillFolderName": "typeui-design-system",
-  "slug": "cypherpunk",
+  "slug": "perspective",
   "source": "workspace",
-  "templateSlug": "cypherpunk",
+  "templateSlug": "perspective",
   "type": "typeui-design-system",
   "variant": "workspace",
   "workspaceId": "ba822226-aeac-424a-97b6-991c28b56f4e"

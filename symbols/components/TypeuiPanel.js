@@ -71,7 +71,7 @@ export const TypeuiPanel = {
       type: 'button',
       'aria-label': 'Minimize TypeUI panel',
       style: (el, s) =>
-        GHOST_BUTTON + ';width:24px;height:24px;border-radius:9999px;font-size:16px;line-height:1;display:' + (s.minimized ? 'none' : 'inline-flex')
+        GHOST_BUTTON + ';width:44px;height:44px;margin:-12px -10px -12px 0;border-radius:9999px;font-size:16px;line-height:1;display:' + (s.minimized ? 'none' : 'inline-flex')
     },
     onClick: (e, el, s) => {
       writeMinimized(true)

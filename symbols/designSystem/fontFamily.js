@@ -1,13 +1,8 @@
 export default {
-  // font-family token
+  // The one product family (typography.md). Configured here, never overridden.
   sans: {
-    value: ['Inter', 'Untitled Sans', 'Neue Haas Grotesk Display', 'Helvetica Neue', 'Helvetica', 'Arial'],
+    value: ['Zalando Sans SemiExpanded', 'Inter', 'Helvetica Neue', 'Helvetica', 'Arial'],
     type: 'sans-serif',
     isDefault: true
-  },
-  // font-family-monospace token: code and the retro display voice
-  mono: {
-    value: ['Space Mono', 'Offbit', 'Departure Mono', 'Berkeley Mono', 'ui-monospace', 'SFMono-Regular', 'Menlo'],
-    type: 'monospace'
   }
 }

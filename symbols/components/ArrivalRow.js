@@ -6,12 +6,12 @@ export const ArrivalRow = {
   align: 'baseline flex-start',
   gap: 'spacing1',
   fontSize: 'fontSm',
-  lineHeight: '1.5',
+  lineHeight: '1.6',
   color: 'body',
   whiteSpace: 'nowrap',
   overflow: 'hidden',
   textOverflow: 'ellipsis',
 
-  ArrivalName: { tag: 'span', fontWeight: '700', text: (el, s) => s.name || '' },
+  ArrivalName: { tag: 'span', fontWeight: '600', text: (el, s) => s.name || '' },
   ArrivalVerb: { tag: 'span', text: '{{ arrivedVerb | polyglot }}' }
 }

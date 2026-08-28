@@ -2,8 +2,8 @@
 
 ## Identity
 
-- **Design system name:** Cypherpunk
-- **Project name:** Cypherpunk
+- **Design system name:** Perspective
+- **Project name:** Perspective
 - **Project logo:** No logo set. Use the TypeUI dashboard to add one.
 
 ## Logo Usage

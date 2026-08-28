@@ -6,6 +6,9 @@ export default {
   useSvgSprite: true,
   useDefaultConfig: true,
   useDocumentTheme: true,
+  // Perspective is dark-first and the game stage is footage: ship the dark
+  // registry only (documented product exception in CLAUDE.md).
+  globalTheme: 'dark',
   verbose: false,
 
   polyglot: {
@@ -51,6 +54,7 @@ export default {
         timerPreview: 'Bets open in',
         timerBetting: 'Bets close in',
         timerLocked: 'Locked',
+        timerClosing: 'Closing',
         timerResults: 'Next duel in',
 
         rakeNote: '20 chips · winners split the pot · 5% rake',
