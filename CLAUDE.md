@@ -369,6 +369,11 @@ templates do not interpolate inside `attr`; an icon child must be named
 a broken var, so focus rings use a colour token; `globalScope.js` edits can
 be served stale until the runner cache is deleted (see Symbols section).
 
+The bet dock is liquid glass (`theme: 'glass'` + `backdropFilter`), a
+documented exception so the footage stays visible; its ink text reads
+6.9:1 over a black frame. Do not animate a transform on it (Chrome
+mis-composites backdrop-filter over `<video>`).
+
 The workspace console (`Ws*`) keeps its own dark palette; it is out of scope
 for the Cypherpunk restyle.
 

@@ -22,7 +22,9 @@ export const ChallengerCard = {
   cursor: 'pointer',
   transition: 'background-color .15s ease, color .15s ease, border-color .15s ease, box-shadow .15s ease',
   '@reducedMotion': { transition: 'none' },
-  background: (el, s) => (isChosen(s.root, s.side) ? 'brandInk' : 'neutralPrimarySoft'),
+  // Transparent inside the glass dock so the footage stays visible; the
+  // dock tint alone keeps ink text at 6.9:1 worst case.
+  background: (el, s) => (isChosen(s.root, s.side) ? 'brandInk' : 'transparent'),
   color: (el, s) => (isChosen(s.root, s.side) ? 'paper' : 'body'),
   opacity: (el, s) => (s.root.myBet && s.root.myBet.side !== s.side ? '.55' : '1'),
   ':hover': { borderColor: 'darkStrong', boxShadow: 'elevation1' },

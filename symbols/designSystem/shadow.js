@@ -1,4 +1,8 @@
 export default {
+  // Documented exception to shadows.md: an inset highlight that gives the
+  // glass dock its edge. Not an elevation; no drop shadow.
+  glassEdge: 'inset 0 1px 0 rgba(255, 255, 255, .55), inset 0 -1px 0 rgba(28, 28, 28, .1)',
+
   // ---- shadows.md: elevation scale (ink at low opacity) -----------------
   elevationNone: 'none',
   elevation1: '0px 1px 2px rgba(28, 28, 28, 0.06)',

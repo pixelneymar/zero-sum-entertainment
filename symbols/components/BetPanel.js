@@ -1,9 +1,14 @@
 // The bet dock (TypeUI section 4, widget). Two challenger cards: tap one, then
 // PLACE BET. The stake is standard (20 chips) and the bet is a side, nothing
 // more. Picks go through setSide, the bet through submitBet; the server is
-// the only judge. A raised widget card (cards.md, 20px widget padding).
+// the only judge. A liquid-glass widget card over the footage: the beige
+// tint at 72% plus a backdrop blur keeps the video visible and the ink
+// text readable (theme.js glass).
 export const BetPanel = {
   extends: 'CkCard',
+  theme: 'glass',
+  backdropFilter: 'blur(1rem) saturate(1.2)',
+  shadow: 'glassEdge',
   tag: 'section',
   attr: { 'aria-label': 'Place your bet' },
   flow: 'y',

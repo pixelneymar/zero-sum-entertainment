@@ -12,6 +12,14 @@ export default {
     '@dark': { background: 'neutralPrimarySoft', color: 'body' }
   },
 
+  // Liquid glass for overlays that sit on the footage (SKILL.md: a
+  // translucent fill must pair with a backdrop blur). Beige at 72% over a
+  // black frame composites to #A8A59E: ink text reads 6.9:1 worst case.
+  glass: {
+    '@light': { background: 'neutralPrimarySoft.72', color: 'body' },
+    '@dark': { background: 'neutralPrimarySoft.72', color: 'body' }
+  },
+
   // Primary action: ink fill, white label (buttons.md).
   brandFill: {
     '@light': { background: 'brandInk', color: 'paper' },

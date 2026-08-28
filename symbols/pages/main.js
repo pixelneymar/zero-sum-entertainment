@@ -114,89 +114,114 @@ export const main = {
       flex: '1',
       minHeight: '0',
       flow: 'y',
-      align: 'center center',
+      align: 'stretch flex-start',
 
-      // Height-driven 16:9 frame: as wide as the body height allows, never
-      // wider than the viewport (then the footage letterboxes inside).
-      Frame: {
-        height: '100%',
-        width: 'auto',
-        maxWidth: '100%',
-        aspectRatio: '16 / 9',
-        background: 'darkStrong',
-        borderWidth: 'spacing0_5',
-        borderStyle: 'solid',
-        borderColor: 'borderDefault',
-        round: 'radiusXxl',
-        overflow: 'hidden',
-        VideoSurface: {}
-      },
-
-      // HUD layer over the video body only; the top bar is not covered.
-      Hud: {
-      position: 'absolute',
-      inset: '0 0 0 0',
-      pointerEvents: 'none',
-
-      // Narrow viewports: the crowd widget moves into the dock (below).
-      LeftRail: {
-        position: 'absolute',
-        left: 'spacing6',
-        '@tabletS': { display: 'none' },
-        top: '50%',
-        transform: 'translateY(-50%)',
-        pointerEvents: 'auto',
-        CrowdPanel: {}
-      },
-
-      RightRail: {
-        position: 'absolute',
-        right: 'spacing6',
-        top: '50%',
-        transform: 'translateY(-50%)',
-        pointerEvents: 'auto',
-        '@tabletS': { display: 'none' },
-        HistoryPanel: {}
-      },
-
-      // 80px from the bottom so the fixed TypeUI panel never covers the dock.
-      BottomDock: {
-        position: 'absolute',
-        bottom: 'spacing20',
-        left: '50%',
-        transform: 'translateX(-50%)',
-        pointerEvents: 'auto',
+      // The footage. Nothing that belongs to betting sits on it: the dock
+      // lives in its own strip below, so the cut and the scales stay visible.
+      Screen: {
+        position: 'relative',
+        flex: '1',
+        minHeight: '0',
         flow: 'y',
-        align: 'center flex-end',
+        align: 'center center',
+
+        // Height-driven 16:9 frame: as wide as the screen height allows,
+        // never wider than the viewport (then the footage letterboxes inside).
+        Frame: {
+          height: '100%',
+          width: 'auto',
+          maxWidth: '100%',
+          aspectRatio: '16 / 9',
+          background: 'darkStrong',
+          borderWidth: 'spacing0_5',
+          borderStyle: 'solid',
+          borderColor: 'borderDefault',
+          round: 'radiusXxl',
+          overflow: 'hidden',
+          VideoSurface: {}
+        },
+
+        // HUD layer over the footage: side rails and the centred status panels.
+        Hud: {
+          position: 'absolute',
+          inset: '0 0 0 0',
+          pointerEvents: 'none',
+
+          // Narrow viewports: the crowd widget moves into the dock strip.
+          LeftRail: {
+            position: 'absolute',
+            left: 'spacing6',
+            top: '50%',
+            transform: 'translateY(-50%)',
+            pointerEvents: 'auto',
+            '@tabletS': { display: 'none' },
+            CrowdPanel: {}
+          },
+
+          RightRail: {
+            position: 'absolute',
+            right: 'spacing6',
+            top: '50%',
+            transform: 'translateY(-50%)',
+            pointerEvents: 'auto',
+            '@tabletS': { display: 'none' },
+            HistoryPanel: {}
+          },
+
+          // The lock stamp sits at the top of the frame, away from the scales.
+          Top: {
+            position: 'absolute',
+            top: 'spacing6',
+            left: '0',
+            right: '0',
+            flow: 'y',
+            align: 'center flex-start',
+            pointerEvents: 'none',
+            LockStamp: { pointerEvents: 'auto' }
+          },
+
+          Centre: {
+            position: 'absolute',
+            inset: '0 0 0 0',
+            flow: 'y',
+            align: 'center center',
+            pointerEvents: 'none',
+            ResultsCard: { pointerEvents: 'auto' },
+            SessionSummary: { pointerEvents: 'auto' }
+          }
+        }
+      },
+
+      // Bet dock strip, separate from the footage. 80px bottom clearance keeps
+      // the fixed TypeUI panel off the PLACE BET row.
+      DockStrip: {
+        flexShrink: '0',
+        flow: 'y',
+        align: 'center flex-start',
         gap: 'spacing3',
-        width: 'dock',
-        maxWidth: '94vw',
+        // Always present, so the 80px clearance also keeps the fixed TypeUI
+        // panel off the footage while the duel plays out.
+        padding: 'spacing3 spacing6 spacing20',
+        '@tabletS': { padding: 'spacing3 spacing4 spacing20' },
+
         MobileCrowd: {
           display: 'none',
           '@tabletS': { display: 'block' },
-          width: '100%',
-          // Compact: head + stats only, so the stack clears the top bar.
+          width: 'dock',
+          maxWidth: '100%',
+          // Compact: head + stats only.
           CrowdPanel: {
             width: '100%',
+            theme: 'glass',
+            backdropFilter: 'blur(1rem) saturate(1.2)',
+            shadow: 'glassEdge',
             display: (el, s) => (s.screen === 'playing' && s.phase !== 'ended' ? 'flex' : 'none'),
             Ticker: { display: 'none' },
             FrozenNote: { display: 'none' }
           }
         },
-        BetPanel: { width: '100%' }
-      },
-
-      Centre: {
-        position: 'absolute',
-        inset: '0 0 0 0',
-        flow: 'y',
-        align: 'center center',
-        pointerEvents: 'none',
-        LockStamp: { pointerEvents: 'auto' },
-        ResultsCard: { pointerEvents: 'auto' },
-        SessionSummary: { pointerEvents: 'auto' }
+        BetPanel: { maxWidth: '100%' }
       }
-    }
     }
   }
 }

@@ -9,8 +9,26 @@ const MINIMIZED =
 const GHOST_BUTTON =
   'align-items:center;justify-content:center;background:transparent;border:0;padding:0;margin:0;color:inherit;font:inherit;cursor:pointer'
 
+const readMinimized = () => {
+  try {
+    return localStorage.getItem('zse_typeui_panel') === 'min'
+  } catch {
+    return false
+  }
+}
+const writeMinimized = (min) => {
+  try {
+    localStorage.setItem('zse_typeui_panel', min ? 'min' : 'max')
+  } catch {}
+}
+
 export const TypeuiPanel = {
+  // The minimized choice persists per browser, so the pill stays out of the
+  // way once the viewer tucks it into the corner.
   state: { minimized: false },
+  onRender: (el, s) => {
+    if (readMinimized()) s.update({ minimized: true })
+  },
   attr: {
     role: 'complementary',
     'aria-label': 'TypeUI',
@@ -25,7 +43,10 @@ export const TypeuiPanel = {
       'aria-label': 'Maximize TypeUI panel',
       style: (el, s) => GHOST_BUTTON + ';width:44px;height:44px;display:' + (s.minimized ? 'inline-flex' : 'none')
     },
-    onClick: (e, el, s) => s.update({ minimized: false }),
+    onClick: (e, el, s) => {
+      writeMinimized(false)
+      s.update({ minimized: false })
+    },
     Logo: {
       tag: 'img',
       attr: { src: 'https://www.typeui.sh/logo.svg', alt: 'TypeUI', width: '18', height: '18', style: 'width:18px;height:18px;display:block' }
@@ -52,6 +73,9 @@ export const TypeuiPanel = {
       style: (el, s) =>
         GHOST_BUTTON + ';width:24px;height:24px;border-radius:9999px;font-size:16px;line-height:1;display:' + (s.minimized ? 'none' : 'inline-flex')
     },
-    onClick: (e, el, s) => s.update({ minimized: true })
+    onClick: (e, el, s) => {
+      writeMinimized(true)
+      s.update({ minimized: true })
+    }
   }
 }
