@@ -12,9 +12,9 @@ export const GamePicker = {
   width: '100%',
   minHeight: '100vh',
   overflow: 'hidden',
-  padding: 'spacing24 spacing6',
-  '@tabletS': { padding: 'spacing12 spacing4' },
-  '@mobileL': { padding: 'spacing8 spacing4' },
+  padding: 'spacing16 spacing6',
+  '@tabletS': { padding: 'spacing16 spacing4' },
+  '@mobileL': { padding: 'spacing16 spacing4' },
   display: (el, s) => (s.screen === 'picker' ? 'flex' : 'none'),
 
   state: {
@@ -93,11 +93,11 @@ export const GamePicker = {
       textAlign: 'center',
       width: '100%',
       maxWidth: 'headerMax',
-      marginBottom: 'spacing12',
+      marginBottom: 'spacing8',
 
       // Brand (docs/brand.md): the stacked wordmark is the hero image; the
       // h1 below keeps the page's heading semantics.
-      LogoStacked: { marginBottom: 'spacing8' },
+      LogoStacked: { marginBottom: 'spacing6' },
 
       // h1 (typography.md): 72 / tablet 48 / mobile 36, -1.5px tracking,
       // display line-height 1 (fundamentals floor for display type).
@@ -113,7 +113,7 @@ export const GamePicker = {
         letterSpacing: '-0.09375rem',
         textWrap: 'balance',
         color: 'heading',
-        margin: '0 0 spacing8'
+        margin: '0 0 spacing6'
       },
 
       // Leading paragraph: 20px / 1.7, ~70ch, body colour.
@@ -137,7 +137,7 @@ export const GamePicker = {
       position: 'relative',
       width: '100%',
       maxWidth: 'headerMax',
-      marginBottom: 'spacing12',
+      marginBottom: 'spacing8',
       perspective: '1200px',
 
       // Floating pill (SKILL.md hero): the kicker, outside the panel.

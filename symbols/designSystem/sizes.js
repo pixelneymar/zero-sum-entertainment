@@ -72,10 +72,10 @@ export default {
   rail: '15rem',
   dock: '46rem',
   card: '34rem',
-  poster: '22rem',
+  poster: '18rem',
   portrait: '3.5rem',
   // brand (docs/brand.md): the stacked wordmark on the start screen
-  logoHero: '28rem',
+  logoHero: '13rem',
 
   // ---- workspace console furniture (Ws*) ----------------------------------
   wsRail: '13.5rem',
