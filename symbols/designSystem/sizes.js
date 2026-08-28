@@ -63,6 +63,7 @@ export default {
   // ---- layout (SKILL.md) --------------------------------------------------
   containerMax: '72rem',
   headerMax: '48rem',
+  galleryMax: '52rem',
   copyMax: '42rem',
   orb: '40rem',
   blur: '1rem',

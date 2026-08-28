@@ -1,6 +1,6 @@
-// Poster card (cards.md interactive): a glass card pushed forward in the
-// gallery's 3D space (translateZ). The poster bleeds to the top edge under
-// the 16px corners; the body is padded 24px. The whole card is ONE button
+// Poster card (cards.md interactive): a glass card with its own border,
+// blur and shadow. The poster bleeds to the top edge under the 16px
+// corners; the body is padded 24px. The whole card is ONE button
 // (selectGame), so the Play affordance inside is a styled span, never a
 // nested control. Variants set the poster and copy.
 export const GameCard = {
@@ -16,9 +16,6 @@ export const GameCard = {
   fontFamily: 'sans',
   textAlign: 'left',
   color: 'body',
-  transform: 'translateZ(1.875rem)',
-  ':hover': { background: 'paper.10', shadow: 'shadowLg', transform: 'translateZ(1.875rem) translateY(-2px)' },
-  '@reducedMotion': { transition: 'none', ':hover': { transform: 'translateZ(1.875rem)' } },
 
   Img: {
     display: 'block',

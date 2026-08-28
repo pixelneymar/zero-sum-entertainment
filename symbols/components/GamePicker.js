@@ -1,9 +1,6 @@
 // Start screen (SKILL.md hero, layout.md): a navy section with blurred
-// atmosphere orbs, a flat copy column, and the two game cards in a CSS
-// perspective container with a static 3D tilt and a mouse parallax. The
-// parallax is rAF-throttled and switched off under prefers-reduced-motion.
-let parallaxFrame = 0
-
+// atmosphere orbs, a flat copy column, and the two game cards as separate
+// glass cards in one row (they wrap on narrow screens).
 export const GamePicker = {
   tag: 'main',
   position: 'relative',
@@ -16,39 +13,6 @@ export const GamePicker = {
   '@tabletS': { padding: 'spacing16 spacing4' },
   '@mobileL': { padding: 'spacing16 spacing4' },
   display: (el, s) => (s.screen === 'picker' ? 'flex' : 'none'),
-
-  state: {
-    rx: 4,
-    ry: -8,
-    motion: !(typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)
-  },
-  // Native listener: the runtime does not wire onMouseMove. rAF-throttled;
-  // skipped entirely under prefers-reduced-motion.
-  onRender: (el, s) => {
-    let motion = true
-    try {
-      motion = !window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    } catch {}
-    if (!motion) {
-      s.update({ motion: false })
-      return
-    }
-    const node = el.node
-    if (!node || node.__parallax) return
-    node.__parallax = true
-    const live = () => el.state || s
-    node.addEventListener('mousemove', (e) => {
-      if (parallaxFrame) return
-      parallaxFrame = requestAnimationFrame(() => {
-        parallaxFrame = 0
-        const r = node.getBoundingClientRect()
-        const x = (e.clientX - r.left) / r.width - 0.5
-        const y = (e.clientY - r.top) / r.height - 0.5
-        live().update({ rx: 4 - y * 8, ry: -8 + x * 12 })
-      })
-    })
-    node.addEventListener('mouseleave', () => live().update({ rx: 4, ry: -8 }))
-  },
 
   // Atmosphere: two blurred orbs (layout.md backgrounds). Decorative only.
   OrbBrand: {
@@ -130,56 +94,33 @@ export const GamePicker = {
       }
     },
 
-    // The gallery (SKILL.md hero): a perspective context holding the main
-    // glass panel, tilted in 3D and parallaxed; the cards float inside it and
-    // a floating pill sits outside it, also rotated in 3D.
+    // The gallery: the kicker badge, then the two game cards as separate
+    // glass surfaces in one row. Each card carries its own border, blur and
+    // shadow (CkCardInteractive); a shared panel made them read as one block.
     Gallery: {
-      position: 'relative',
+      flow: 'y',
+      align: 'center flex-start',
+      gap: 'spacing6',
       width: '100%',
-      maxWidth: 'headerMax',
-      marginBottom: 'spacing8',
-      perspective: '1200px',
+      maxWidth: 'galleryMax',
+      marginBottom: 'spacing12',
 
-      // Floating pill (SKILL.md hero): the kicker, outside the panel.
-      FloatingPill: {
+      Kicker: {
         extends: 'CkBadgeLg',
         theme: 'badgeBrand',
         borderColor: 'borderBrandSubtle',
         round: 'radiusFull',
-        backdropFilter: 'blur(1rem) saturate(1.4)',
-        shadow: 'shadowLg',
-        position: 'absolute',
-        top: '0',
-        left: '50%',
-        zIndex: '1',
-        transform: 'translate(-50%, -50%) translateZ(3rem) rotateX(4deg)',
+        alignSelf: 'center',
         text: '{{ pickerKicker | polyglot }}'
       },
-
-      // The main glass panel keeps the spec 6% fill: a 12% lift drops the
-      // brand kicker inside the cards below 4.5:1.
-      GalleryPanel: {
-        theme: 'glass',
-        backdropFilter: 'blur(1rem) saturate(1.4)',
-        borderWidth: 'spacingPx',
-        borderStyle: 'solid',
-        borderColor: 'paper.10',
-        round: 'radiusBase',
-        shadow: 'shadow2xl',
-        padding: 'spacing6',
-        '@tabletS': { padding: 'spacing4' },
-        transformStyle: 'preserve-3d',
-        transition: 'transform .2s ease-out',
-        '@reducedMotion': { transition: 'none' },
-        transform: (el, s) => (s.motion ? `rotateX(${s.rx.toFixed(2)}deg) rotateY(${s.ry.toFixed(2)}deg)` : 'none'),
 
       GameCards: {
         flow: 'x',
         align: 'stretch center',
-        gap: 'spacing6',
+        gap: 'spacing8',
+        '@tabletS': { gap: 'spacing6' },
         flexWrap: 'wrap',
         width: '100%',
-        transformStyle: 'preserve-3d',
         childExtends: 'GameCard',
 
         BananaCard: {
@@ -202,7 +143,6 @@ export const GamePicker = {
             CardLine: { text: '{{ waterObjective | polyglot }}' }
           }
         }
-      }
       }
     },
 
