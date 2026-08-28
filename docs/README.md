@@ -23,8 +23,10 @@ For toolchain rules — PATH, Supabase, Symbols, migration traps — see
 
 ## The one-paragraph version
 
-Users watch someone attempt a precise physical task and bet on **how far off**
-it lands. Closest 10% split the pot, 5% rake. The product's only real claim is
+Users watch two challengers attempt the same precise physical task, one after
+the other, and bet on **which one lands closer**. The stake is standard (20
+chips); the bet is a side. Everyone who backed the winner splits the pot, 5%
+rake; a dead heat refunds. The product's only real claim is
 that once betting closes, nothing changes — not the bets, the crowd, the pot,
 or the result. Everything else is entertainment; that part has to be true.
 

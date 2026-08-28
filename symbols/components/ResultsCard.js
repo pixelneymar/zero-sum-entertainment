@@ -1,228 +1,219 @@
-// The results moment. The scale readings echo what the viewer just watched,
-// the result numeral pops, the crowd's distribution shows where everyone
-// stood, and a win lights the card gold. All numbers come from the server's
-// settlement — this card decides nothing.
+// The results moment (TypeUI section 5). Three status panels, one shown at a
+// time, each an expanded alert (alerts.md) whose intent IS the meaning:
+//   WinCard   success: the chips you won are the headline; pops in, pulses.
+//   LossCard  danger: the chips you lost are the headline; rises, shakes.
+//   PlainCard neutral: no bet, or a voided duel. Just who won.
+// Every number comes from the server's settlement; this card decides nothing.
+// Intent colour is never the only cue: icon + label carry the meaning too.
 export const ResultsCard = {
   flow: 'y',
-  align: 'stretch flex-start',
-  gap: 'A',
-  padding: 'B C',
-  width: 'card',
-  maxWidth: '94vw',
-  round: 'B',
-  theme: 'glass',
-  border: '1px solid white.12',
-  shadow: 'glass',
-  backdropFilter: 'blur(1.1rem)',
-  textAlign: 'center',
-  animation: 'riseIn .5s ease-out both',
-  transition: 'B defaultBezier',
-  transitionProperty: 'border-color, box-shadow',
-  borderColor: (el, s) => (s.settlement && s.settlement.iWon ? 'gold' : 'white.12'),
-  boxShadow: (el, s) => (s.settlement && s.settlement.iWon ? 'win' : 'glass'),
-  background: (el, s) => (s.settlement && s.settlement.iWon ? 'winWash' : 'steel.62'),
-  display: (el, s) =>
-    s.screen === 'playing' && s.phase === 'results' && s.result ? 'flex' : 'none',
+  align: 'center center',
+  attr: { role: 'status', 'aria-live': 'polite' },
+  display: (el, s) => (s.screen === 'playing' && s.phase === 'results' && s.result ? 'flex' : 'none'),
 
-  ResultKicker: {
-    tag: 'span',
-    text: '{{ resultKicker | polyglot }}',
-    fontSize: 'Z',
-    fontWeight: '700',
-    letterSpacing: 'Y',
-    textTransform: 'uppercase',
-    theme: 'onVideoMuted'
-  },
-
-  Readings: {
-    flow: 'x',
-    align: 'baseline center',
-    gap: 'Y',
-    flexWrap: 'wrap',
-    fontSize: 'A',
-    fontVariantNumeric: 'tabular-nums',
-    display: (el, s) =>
-      s.result && s.result.readings && s.result.readings.length ? 'flex' : 'none',
-
-    ReadingsLead: {
-      tag: 'span',
-      text: '{{ scaleSaid | polyglot }}',
-      theme: 'onVideoMuted'
-    },
-    ReadingsValues: {
-      tag: 'span',
-      text: (el, s) => (s.result && s.result.readings ? s.result.readings.join(' / ') : ''),
-      fontWeight: '800',
-      letterSpacing: '-X'
-    },
-    ReadingsArrow: { tag: 'span', text: '→', theme: 'onVideoMuted' }
-  },
-
-  ResultValue: {
-    flow: 'x',
-    align: 'baseline center',
-    gap: 'Y',
-    fontVariantNumeric: 'tabular-nums',
-    animation: 'popIn .6s cubic-bezier(.2, .9, .3, 1.2) both',
-
-    ValueNumber: {
-      tag: 'span',
-      text: (el, s) => {
-        if (!s.result) return ''
-        const value = s.result.value
-        return value > 0 ? `+${value}` : String(value)
-      },
-      fontSize: 'I',
-      lineHeight: 'H',
-      fontWeight: '900',
-      letterSpacing: '-Y',
-      color: (el, s) => (s.settlement && s.settlement.iWon ? 'gold' : 'white')
-    },
-
-    ValueUnit: {
-      tag: 'span',
-      text: (el, s) => (s.result ? s.result.unit : ''),
-      fontSize: 'D',
-      theme: 'onVideoMuted'
-    }
-  },
-
-  ResultHistogram: {},
-
-  WinnerLine: {
-    flow: 'x',
-    align: 'baseline center',
-    gap: 'Y',
-    flexWrap: 'wrap',
-    fontSize: 'A2',
-    display: (el, s) => (s.settlement ? 'flex' : 'none'),
-
-    WinnerCount: {
-      tag: 'span',
-      text: (el, s) => (s.settlement ? String(s.settlement.winnerCount) : ''),
-      fontWeight: '800'
-    },
-    WinnerWordOne: {
-      tag: 'span',
-      text: '{{ winnerOne | polyglot }}',
-      display: (el, s) =>
-        s.settlement && s.settlement.winnerCount === 1 ? 'inline' : 'none'
-    },
-    WinnerWordMany: {
-      tag: 'span',
-      text: '{{ winnerMany | polyglot }}',
-      display: (el, s) =>
-        s.settlement && s.settlement.winnerCount !== 1 ? 'inline' : 'none'
-    },
-    WinnerDash: { tag: 'span', text: '—', theme: 'onVideoMuted' },
-    MultiplierText: {
-      tag: 'span',
-      text: (el, s) =>
-        s.settlement ? `×${Number(s.settlement.multiplier).toFixed(2)}` : '',
-      fontWeight: '800',
-      color: 'gold'
-    }
-  },
-
-  WinBanner: {
-    flow: 'x',
-    align: 'baseline center',
-    gap: 'Y',
-    alignSelf: 'center',
-    theme: 'success',
-    round: 'C',
-    padding: 'Y B',
-    animation: 'popIn .5s cubic-bezier(.2, .9, .3, 1.2) .25s both, winGlow 1.6s ease-out .4s infinite',
+  WinCard: {
+    extends: 'CkResultCard',
+    theme: 'badgeSuccess',
+    animation: 'popIn .25s ease-out both',
+    '@reducedMotion': { animation: 'none' },
     display: (el, s) => (s.settlement && s.settlement.iWon ? 'flex' : 'none'),
 
-    WinLabel: {
-      tag: 'span',
-      text: '{{ youWon | polyglot }}',
-      fontSize: 'A',
-      fontWeight: '800',
-      letterSpacing: 'X',
-      textTransform: 'uppercase'
+    WinHead: {
+      flow: 'x',
+      align: 'center center',
+      gap: 'spacing2',
+      Icon: { name: 'trophy', boxSize: 'icon20', attr: { 'aria-hidden': 'true' } },
+      WinKicker: { extends: 'CkEyebrow', color: 'inherit', text: '{{ youWon | polyglot }}' }
     },
+
     WinAmount: {
+      flow: 'x',
+      align: 'baseline center',
+      gap: 'spacing2',
+      fontVariantNumeric: 'tabular-nums',
+      animation: 'winPulse .6s ease-out .25s both',
+      '@reducedMotion': { animation: 'none' },
+      WinValue: {
+        tag: 'span',
+        fontFamily: 'mono',
+        fontSize: 'font9xl',
+        lineHeight: '1',
+        fontWeight: '700',
+        letterSpacing: '-0.0625rem',
+        text: (el, s) => (s.settlement ? `+${(s.settlement.myPayout ?? 0).toLocaleString('en-US')}` : '')
+      },
+      WinUnit: { tag: 'span', fontSize: 'fontLg', lineHeight: '1.3', text: '{{ chipsUnit | polyglot }}' }
+    },
+
+    WinLine: {
       tag: 'span',
-      text: (el, s) =>
-        s.settlement ? `+${(s.settlement.myPayout ?? 0).toLocaleString('en-US')}` : '',
-      fontSize: 'C',
-      fontWeight: '900',
-      fontVariantNumeric: 'tabular-nums'
+      fontSize: 'fontMd',
+      lineHeight: '1.5',
+      fontWeight: '500',
+      text: (el, s) => {
+        if (!s.settlement || !s.result || s.result.winner == null) return ''
+        const c = s.game && s.game.challengers ? s.game.challengers[s.result.winner - 1] : null
+        const name = c ? c.name : `Challenger ${s.result.winner}`
+        return `${name} ${s.winsVerb || 'wins'} · ×${Number(s.settlement.multiplier).toFixed(2)}`
+      }
     },
-    WinUnit: { tag: 'span', text: '{{ chipsUnit | polyglot }}', fontSize: 'Z' }
+
+    WinScores: { extends: 'ResultScores' }
   },
 
-  LossNote: {
-    tag: 'span',
-    text: '{{ notThisTime | polyglot }}',
-    fontSize: 'A',
-    theme: 'onVideoMuted',
-    display: (el, s) =>
-      s.myBet && s.settlement && !s.settlement.iWon ? 'inline' : 'none'
+  LossCard: {
+    extends: 'CkResultCard',
+    theme: 'badgeDanger',
+    animation: 'riseIn .2s ease-out both',
+    '@reducedMotion': { animation: 'none' },
+    display: (el, s) => (s.myBet && s.settlement && !s.settlement.iWon && !s.settlement.voided ? 'flex' : 'none'),
+
+    LossHead: {
+      flow: 'x',
+      align: 'center center',
+      gap: 'spacing2',
+      Icon: { name: 'x', boxSize: 'icon20', attr: { 'aria-hidden': 'true' } },
+      LossKicker: { extends: 'CkEyebrow', color: 'inherit', text: '{{ youLost | polyglot }}' }
+    },
+
+    LossAmount: {
+      flow: 'x',
+      align: 'baseline center',
+      gap: 'spacing2',
+      fontVariantNumeric: 'tabular-nums',
+      animation: 'shake .3s ease-out .2s both',
+      '@reducedMotion': { animation: 'none' },
+      LossValue: {
+        tag: 'span',
+        fontFamily: 'mono',
+        fontSize: 'font9xl',
+        lineHeight: '1',
+        fontWeight: '700',
+        letterSpacing: '-0.0625rem',
+        text: (el, s) => (s.myBet ? `-${(s.myBet.stake ?? 0).toLocaleString('en-US')}` : '')
+      },
+      LossUnit: { tag: 'span', fontSize: 'fontLg', lineHeight: '1.3', text: '{{ chipsUnit | polyglot }}' }
+    },
+
+    LossLine: {
+      tag: 'span',
+      fontSize: 'fontMd',
+      lineHeight: '1.5',
+      fontWeight: '500',
+      text: (el, s) => {
+        if (!s.result || s.result.winner == null || !s.myBet || !s.settlement) return ''
+        const names = (s.game && s.game.challengers) || []
+        const w = names[s.result.winner - 1]
+        const m = names[s.myBet.side - 1]
+        const winner = w ? w.name : `Challenger ${s.result.winner}`
+        const mine = m ? m.name : `Challenger ${s.myBet.side}`
+        return `${winner} ${s.winsVerb || 'wins'} · ${s.youBacked || 'You backed'} ${mine}`
+      }
+    },
+
+    LossScores: { extends: 'ResultScores' }
   },
 
-  NoBetNote: {
-    tag: 'span',
-    text: '{{ noBetNote | polyglot }}',
-    fontSize: 'A',
-    theme: 'onVideoMuted',
-    display: (el, s) => (!s.myBet && s.settlement ? 'inline' : 'none')
-  },
+  PlainCard: {
+    extends: 'CkResultCard',
+    theme: 'badgeNeutral',
+    animation: 'fadeIn .2s ease-out both',
+    '@reducedMotion': { animation: 'none' },
+    display: (el, s) => (s.settlement && (!s.myBet || s.settlement.voided) ? 'flex' : 'none'),
 
-  MetaRow: {
-    flow: 'x',
-    align: 'baseline center',
-    gap: 'A',
-    flexWrap: 'wrap',
-    fontSize: 'Z',
-    fontVariantNumeric: 'tabular-nums',
-    paddingTop: 'Y',
-    borderTop: '1px solid white.10',
+    PlainKicker: { extends: 'CkEyebrow', text: '{{ resultKicker | polyglot }}' },
 
-    PlayersMeta: {
-      flow: 'x',
-      align: 'baseline flex-start',
-      gap: 'X',
-      MetaValue: {
-        tag: 'span',
-        text: (el, s) =>
-          ((s.frozen ? s.frozen.playerCount : s.playerCount) ?? 0).toLocaleString('en-US'),
-        fontWeight: '700'
-      },
-      MetaLabel: { tag: 'span', text: '{{ playersMeta | polyglot }}', theme: 'onVideoMuted' }
+    PlainTitle: {
+      tag: 'span',
+      fontFamily: 'mono',
+      fontSize: 'font5xl',
+      lineHeight: '1',
+      fontWeight: '700',
+      letterSpacing: '-0.0625rem',
+      color: 'heading',
+      text: (el, s) => {
+        if (!s.result || s.result.winner == null) return ''
+        if (s.result.winner === 0) return s.voidTitle || 'Dead heat'
+        const c = s.game && s.game.challengers ? s.game.challengers[s.result.winner - 1] : null
+        return c ? c.name : `Challenger ${s.result.winner}`
+      }
     },
-    PotMeta: {
-      flow: 'x',
-      align: 'baseline flex-start',
-      gap: 'X',
-      MetaValue: {
-        tag: 'span',
-        text: (el, s) =>
-          ((s.frozen ? s.frozen.pot : s.pot) ?? 0).toLocaleString('en-US'),
-        fontWeight: '700'
-      },
-      MetaLabel: { tag: 'span', text: '{{ potMeta | polyglot }}', theme: 'onVideoMuted' }
+
+    PlainLine: {
+      tag: 'span',
+      fontSize: 'fontMd',
+      lineHeight: '1.5',
+      text: (el, s) => {
+        if (!s.settlement) return ''
+        if (s.settlement.voided) return s.voidNote || ''
+        return `${s.winsVerb || 'wins'} · ${s.noBetNote || ''}`
+      }
     },
-    RakeMeta: {
-      flow: 'x',
-      align: 'baseline flex-start',
-      gap: 'X',
-      MetaValue: { tag: 'span', text: '5%', fontWeight: '700' },
-      MetaLabel: { tag: 'span', text: '{{ rakeMeta | polyglot }}', theme: 'onVideoMuted' }
-    },
-    MultiplierMeta: {
-      flow: 'x',
-      align: 'baseline flex-start',
-      gap: 'X',
-      MetaValue: {
-        tag: 'span',
-        text: (el, s) =>
-          s.settlement ? `×${Number(s.settlement.multiplier).toFixed(2)}` : '',
-        fontWeight: '700'
-      },
-      MetaLabel: { tag: 'span', text: '{{ multiplierMeta | polyglot }}', theme: 'onVideoMuted' }
-    }
+
+    PlainScores: { extends: 'ResultScores' }
   }
+}
+
+// Shared shell for the three result panels: a raised card (cards.md) whose
+// fill and text come from the alert intent (alerts.md expanded variant).
+export const CkResultCard = {
+  extends: 'CkCard',
+  flow: 'y',
+  align: 'center flex-start',
+  gap: 'spacing3',
+  padding: 'spacing6',
+  width: 'card',
+  maxWidth: '94vw',
+  textAlign: 'center',
+  fontFamily: 'sans'
+}
+
+// One line of scores under every result panel. Reads state.result only.
+export const ResultScores = {
+  flow: 'x',
+  align: 'center center',
+  gap: 'spacing4',
+  flexWrap: 'wrap',
+  width: '100%',
+  paddingTop: 'spacing3',
+  borderTopWidth: 'spacing0_5',
+  borderTopStyle: 'solid',
+  borderTopColor: 'borderDefault',
+  fontSize: 'fontMd',
+  lineHeight: '1.5',
+  fontVariantNumeric: 'tabular-nums',
+
+  childrenAs: 'state',
+  children: (el, s) => {
+    if (!s.result || !s.result.attempts) return []
+    const names = (s.game && s.game.challengers) || []
+    return s.result.attempts
+      .filter((a) => !!a)
+      .map((a) => ({
+        name: (names[a.side - 1] && names[a.side - 1].name) || `Challenger ${a.side}`,
+        offset: Math.abs(a.offset),
+        unit: s.result.unit,
+        isWinner: s.result.winner === a.side
+      }))
+  },
+  childExtends: 'ScoreChip'
+}
+
+// "[trophy] Challenger 1 · 13 g off". Child state: { name, offset, unit, isWinner }.
+export const ScoreChip = {
+  flow: 'x',
+  align: 'center center',
+  gap: 'spacing1',
+  whiteSpace: 'nowrap',
+
+  WinIcon: {
+    extends: 'Icon',
+    name: 'trophy',
+    boxSize: 'icon16',
+    attr: { 'aria-hidden': 'true' },
+    display: (el, s) => (s.isWinner ? 'block' : 'none')
+  },
+  Name: { tag: 'span', fontWeight: '700', text: (el, s) => s.name },
+  Dot: { tag: 'span', text: '·', attr: { 'aria-hidden': 'true' } },
+  Off: { tag: 'span', text: (el, s) => `${s.offset} ${s.unit} ${s.root.offWord || 'off'}` }
 }

@@ -1,68 +1,75 @@
 export default {
+  // ---- TypeUI Cypherpunk (colors.md): one lime section surface, ink text.
+  // The registry is single-theme, so both colour schemes resolve identically.
   document: {
-    '@light': { background: 'white', color: 'black' },
-    '@dark': { background: 'ink', color: 'white' }
+    '@light': { background: 'neutralSecondarySoft', color: 'body' },
+    '@dark': { background: 'neutralSecondarySoft', color: 'body' }
   },
 
-  surface: {
-    '@light': { background: 'white-4', color: 'black' },
-    '@dark': { background: 'black+6', color: 'white' }
+  // Raised beige component surface (cards, panels, inputs, secondary buttons).
+  raised: {
+    '@light': { background: 'neutralPrimarySoft', color: 'body' },
+    '@dark': { background: 'neutralPrimarySoft', color: 'body' }
   },
 
-  muted: {
-    '@light': { color: 'black+35' },
-    '@dark': { color: 'white-35' }
+  // Primary action: ink fill, white label (buttons.md).
+  brandFill: {
+    '@light': { background: 'brandInk', color: 'paper' },
+    '@dark': { background: 'brandInk', color: 'paper' }
   },
 
-  // Translucent broadcast panel over video. Identical in both schemes because
-  // the footage under it is always dark.
-  glass: {
-    '@light': { background: 'steel.62', color: 'white' },
-    '@dark': { background: 'steel.62', color: 'white' }
+  // Status fills with a white label (buttons.md filled variants).
+  successFill: {
+    '@light': { background: 'success', color: 'paper' },
+    '@dark': { background: 'success', color: 'paper' }
   },
 
-  // Glass panel after LOCK — denser, colder, nothing moves.
-  glassLocked: {
-    '@light': { background: 'ink.86', color: 'white' },
-    '@dark': { background: 'ink.86', color: 'white' }
+  // Badge / alert intents: soft fill + intent foreground (badges.md, alerts.md).
+  badgeBrand: {
+    '@light': { background: 'brandInkSofter', color: 'fgBrandStrong' },
+    '@dark': { background: 'brandInkSofter', color: 'fgBrandStrong' }
+  },
+  badgeAlt: {
+    '@light': { background: 'neutralPrimarySoft', color: 'heading' },
+    '@dark': { background: 'neutralPrimarySoft', color: 'heading' }
+  },
+  badgeNeutral: {
+    '@light': { background: 'neutralSecondaryMedium', color: 'heading' },
+    '@dark': { background: 'neutralSecondaryMedium', color: 'heading' }
+  },
+  badgeSuccess: {
+    '@light': { background: 'successSoft', color: 'fgSuccessStrong' },
+    '@dark': { background: 'successSoft', color: 'fgSuccessStrong' }
+  },
+  badgeDanger: {
+    '@light': { background: 'dangerSoft', color: 'fgDangerStrong' },
+    '@dark': { background: 'dangerSoft', color: 'fgDangerStrong' }
+  },
+  badgeWarning: {
+    '@light': { background: 'warningSoft', color: 'fgWarning' },
+    '@dark': { background: 'warningSoft', color: 'fgWarning' }
   },
 
-  // Secondary text over video.
-  onVideoMuted: {
-    '@light': { color: 'haze' },
-    '@dark': { color: 'haze' }
+  // Disabled controls (colors.md): disabled surface + fg-disabled text.
+  disabledCtl: {
+    '@light': { background: 'disabled', color: 'fgDisabled' },
+    '@dark': { background: 'disabled', color: 'fgDisabled' }
   },
+
+
+
 
   chip: {
     '@light': { background: 'white.08', color: 'white' },
     '@dark': { background: 'white.08', color: 'white' }
   },
 
-  chipActive: {
-    '@light': { background: 'white', color: 'black' },
-    '@dark': { background: 'white', color: 'black' }
-  },
-
-  primary: {
-    background: 'brand',
-    color: 'white',
-    ':hover': { background: 'brand+8' }
-  },
 
   danger: {
     '@light': { background: 'ember', color: 'white' },
     '@dark': { background: 'ember', color: 'white' }
   },
 
-  success: {
-    '@light': { background: 'mint', color: 'white' },
-    '@dark': { background: 'mint', color: 'white' }
-  },
-
-  locked: {
-    '@light': { background: 'white', color: 'black' },
-    '@dark': { background: 'white', color: 'black' }
-  },
 
   // ---- workspace console (always dark; no footage underneath) ----------
   wsShell: {

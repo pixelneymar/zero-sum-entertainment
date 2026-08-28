@@ -436,3 +436,17 @@ Used only by the client to measure its clock offset (`architecture.md`
 §2.3). It is a display aid, not a guarantee — the guarantee is the set of
 `clock_timestamp()` checks inside `place_bet()` and `settle_round()`
 themselves (`integrity.md` §2, §3, §4).
+
+
+## 9. Duels (added 2026-08-27)
+
+`games.shape = 'duel'` is the launch shape. The bet is a side: `guess_min = 1`,
+`guess_max = 2`, so the existing range checks in `place_bet()` and
+`bets_validate()` are the guard. `round_results.result_value` is the winning
+side (1, 2, or 0 for a dead heat). Each attempt's reading lives in
+`round_attempts (round_id, side, offset_value, readings, visible_at)`, RLS-gated
+per row on its own `visible_at` — the first challenger's number becomes
+readable mid-duel, the second's at `result_visible_at`. `rounds.video_reveal_1_s`
+is the first read's frame. `settle_round()` branches on the shape; a duel with
+no winning bet refunds every stake (`game-rules.md` §3.2). Migration:
+`20260827120001_duel_model.sql`.

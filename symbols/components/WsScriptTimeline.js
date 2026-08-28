@@ -1,6 +1,7 @@
-// One round script as a mini timeline: bet_open → reveal → pause (labels on
-// alternating rows), with the result read off the frame. Child state: a script { id, betOpenAt,
-// revealAt, pauseAt, readings, result, unit, max }.
+// One duel script as a mini timeline: betting runs from frame 0 to the lock,
+// then each challenger's scale is read, then the footage ends (labels on
+// alternating rows). Child state: a script { id, lockAt, reveal1At,
+// reveal2At, endAt, winner, attempts: [{ side, offset, readings }], unit, max }.
 export const WsScriptTimeline = {
   flow: 'y',
   align: 'stretch flex-start',
@@ -12,12 +13,14 @@ export const WsScriptTimeline = {
     flow: 'x',
     align: 'baseline space-between',
     gap: 'A',
+    flexWrap: 'wrap',
     fontSize: 'Z',
     ScriptId: { tag: 'span', fontWeight: '700', text: (el, s) => String(s.id || '') },
     ScriptResult: {
       flow: 'x',
       align: 'baseline flex-end',
       gap: 'Y',
+      flexWrap: 'wrap',
       ResultWord: {
         tag: 'span',
         fontSize: 'Y',
@@ -32,15 +35,24 @@ export const WsScriptTimeline = {
         fontWeight: '800',
         color: 'gold',
         text: (el, s) => {
-          if (s.result == null) return '—'
-          const v = Number(s.result)
-          return `${v > 0 ? '+' : ''}${v} ${s.unit || ''}`
+          if (s.winner == null) return '—'
+          const v = Number(s.winner)
+          return v === 0 ? s.root.wsDeadHeat || 'Dead heat' : `${s.root.wsChallenger || 'Challenger'} ${v}`
         }
       },
-      ReadingsText: {
+      AttemptsText: {
         tag: 'span',
         theme: 'wsDim',
-        text: (el, s) => (s.readings && s.readings.length ? `· ${s.readings.join(' / ')}` : '')
+        text: (el, s) => {
+          const list = Array.isArray(s.attempts) ? s.attempts : []
+          if (!list.length) return ''
+          return `· ${list
+            .map((a) => {
+              const rd = a.readings && a.readings.length ? `${a.readings.join(' / ')} → ` : ''
+              return `C${a.side} ${rd}${Math.abs(Number(a.offset) || 0)} ${s.unit || ''} off`
+            })
+            .join(' · ')}`
+        }
       }
     }
   },
@@ -64,8 +76,8 @@ export const WsScriptTimeline = {
       height: 'W',
       round: 'W',
       background: 'gold',
-      left: (el, s) => `${((Number(s.betOpenAt) || 0) / (Number(s.max) || 1)) * 100}%`,
-      width: (el, s) => `${(((Number(s.revealAt) || 0) - (Number(s.betOpenAt) || 0)) / (Number(s.max) || 1)) * 100}%`
+      left: '0',
+      width: (el, s) => `${((Number(s.lockAt) || 0) / (Number(s.max) || 1)) * 100}%`
     },
 
     Marks: {
@@ -77,9 +89,10 @@ export const WsScriptTimeline = {
         const pct = (v) => ((Number(v) || 0) / max) * 100
         const anchor = (p) => (p < 12 ? 'start' : p > 88 ? 'end' : 'middle')
         return [
-          { at: s.betOpenAt, left: pct(s.betOpenAt), labelKey: 'wsTlBetOpen', tone: 'gold', row: 'below', anchor: anchor(pct(s.betOpenAt)) },
-          { at: s.revealAt, left: pct(s.revealAt), labelKey: 'wsTlReveal', tone: 'white', row: 'above', anchor: anchor(pct(s.revealAt)) },
-          { at: s.pauseAt, left: pct(s.pauseAt), labelKey: 'wsTlPause', tone: 'haze', row: 'below', anchor: anchor(pct(s.pauseAt)) }
+          { at: s.lockAt, left: pct(s.lockAt), labelKey: 'wsTlLock', tone: 'gold', row: 'below', anchor: anchor(pct(s.lockAt)) },
+          { at: s.reveal1At, left: pct(s.reveal1At), labelKey: 'wsTlReveal1', tone: 'white', row: 'above', anchor: anchor(pct(s.reveal1At)) },
+          { at: s.reveal2At, left: pct(s.reveal2At), labelKey: 'wsTlReveal2', tone: 'white', row: 'above', anchor: anchor(pct(s.reveal2At)) },
+          { at: s.endAt, left: pct(s.endAt), labelKey: 'wsTlEnd', tone: 'haze', row: 'below', anchor: anchor(pct(s.endAt)) }
         ]
       },
       childExtends: 'WsScriptMark'

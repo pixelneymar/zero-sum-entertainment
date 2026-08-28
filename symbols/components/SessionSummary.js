@@ -1,22 +1,19 @@
-// End of session. Rounds and balance come straight from state; the net and
-// best multiplier are a UI-side ledger of the settlements this component saw
-// (each settlement is the server's — nothing here decides a payout).
+// End of session (TypeUI section 5). Rounds and balance come straight from
+// state; the net and best multiplier are a UI-side ledger of the settlements
+// this component saw (each settlement is the server's; nothing here decides
+// a payout). A raised card with four inset stat tiles and two actions.
 export const SessionSummary = {
+  extends: 'CkCard',
   flow: 'y',
   align: 'stretch flex-start',
-  gap: 'B',
-  padding: 'C',
+  gap: 'spacing6',
+  padding: 'spacing6',
   width: 'card',
   maxWidth: '94vw',
-  round: 'B',
-  theme: 'glass',
-  border: '1px solid white.12',
-  shadow: 'glass',
-  backdropFilter: 'blur(1.1rem)',
   textAlign: 'center',
-  animation: 'riseIn .6s ease-out both',
-  display: (el, s) =>
-    s.root.screen === 'playing' && s.root.phase === 'ended' ? 'flex' : 'none',
+  fontFamily: 'sans',
+  attr: { role: 'status' },
+  display: (el, s) => (s.root.screen === 'playing' && s.root.phase === 'ended' ? 'flex' : 'none'),
 
   state: { ledger: [] },
 
@@ -40,176 +37,75 @@ export const SessionSummary = {
     })
   },
 
-  SummaryKicker: {
-    tag: 'span',
-    text: '{{ sessionKicker | polyglot }}',
-    fontSize: 'Z',
-    fontWeight: '700',
-    letterSpacing: 'Y',
-    textTransform: 'uppercase',
-    theme: 'onVideoMuted'
-  },
-
-  SummaryTitle: {
-    tag: 'h2',
-    text: (el, s) => (s.root.game ? s.root.game.title : ''),
-    fontSize: 'E',
-    lineHeight: 'E',
-    fontWeight: '800',
-    letterSpacing: '-Y',
-    margin: '0'
+  SummaryHead: {
+    flow: 'y',
+    align: 'center flex-start',
+    gap: 'spacing2',
+    SummaryKicker: { extends: 'CkEyebrow', text: '{{ sessionKicker | polyglot }}' },
+    SummaryTitle: {
+      tag: 'h2',
+      fontSize: 'font3xl',
+      lineHeight: '1.3',
+      fontWeight: '600',
+      color: 'heading',
+      margin: '0',
+      text: (el, s) => (s.root.game ? s.root.game.title : '')
+    }
   },
 
   StatGrid: {
     flow: 'x',
     align: 'stretch center',
-    gap: 'A',
+    gap: 'spacing4',
     flexWrap: 'wrap',
     fontVariantNumeric: 'tabular-nums',
+    childExtends: 'SessionStat',
 
     RoundsStat: {
-      flow: 'y',
-      align: 'center center',
-      gap: 'X',
-      flex: '1',
-      minWidth: '7em',
-      padding: 'A',
-      round: 'Z',
-      theme: 'chip',
-      StatValue: {
-        tag: 'span',
-        text: (el, s) => String((s.root.history || []).length),
-        fontSize: 'D',
-        lineHeight: 'D',
-        fontWeight: '800',
-        letterSpacing: '-Y'
-      },
-      StatLabel: {
-        tag: 'span',
-        text: '{{ statRounds | polyglot }}',
-        fontSize: 'Z',
-        letterSpacing: 'X',
-        textTransform: 'uppercase',
-        theme: 'onVideoMuted'
-      }
+      StatValue: { text: (el, s) => String((s.root.history || []).length) },
+      StatLabel: { text: '{{ statRounds | polyglot }}' }
     },
 
+    // Signed value: the sign is the non-colour cue for the intent colour.
     NetStat: {
-      flow: 'y',
-      align: 'center center',
-      gap: 'X',
-      flex: '1',
-      minWidth: '7em',
-      padding: 'A',
-      round: 'Z',
-      theme: 'chip',
       StatValue: {
-        tag: 'span',
         text: (el, s) => {
           const net = (s.ledger || []).reduce((sum, r) => sum + r.net, 0)
           return net > 0 ? `+${net.toLocaleString('en-US')}` : net.toLocaleString('en-US')
         },
-        fontSize: 'D',
-        lineHeight: 'D',
-        fontWeight: '800',
-        letterSpacing: '-Y',
         color: (el, s) => {
           const net = (s.ledger || []).reduce((sum, r) => sum + r.net, 0)
-          return net > 0 ? 'mint' : net < 0 ? 'ember' : 'white'
+          return net > 0 ? 'fgSuccess' : net < 0 ? 'fgDanger' : 'heading'
         }
       },
-      StatLabel: {
-        tag: 'span',
-        text: '{{ statNet | polyglot }}',
-        fontSize: 'Z',
-        letterSpacing: 'X',
-        textTransform: 'uppercase',
-        theme: 'onVideoMuted'
-      }
+      StatLabel: { text: '{{ statNet | polyglot }}' }
     },
 
     BestStat: {
-      flow: 'y',
-      align: 'center center',
-      gap: 'X',
-      flex: '1',
-      minWidth: '7em',
-      padding: 'A',
-      round: 'Z',
-      theme: 'chip',
       StatValue: {
-        tag: 'span',
         text: (el, s) => {
           const best = (s.ledger || []).reduce((m, r) => Math.max(m, r.multiplier), 0)
-          return best ? `×${best.toFixed(2)}` : '—'
-        },
-        fontSize: 'D',
-        lineHeight: 'D',
-        fontWeight: '800',
-        letterSpacing: '-Y',
-        color: 'gold'
+          return best ? `×${best.toFixed(2)}` : 'None'
+        }
       },
-      StatLabel: {
-        tag: 'span',
-        text: '{{ statBest | polyglot }}',
-        fontSize: 'Z',
-        letterSpacing: 'X',
-        textTransform: 'uppercase',
-        theme: 'onVideoMuted'
-      }
+      StatLabel: { text: '{{ statBest | polyglot }}' }
     },
 
     BalanceStat: {
-      flow: 'y',
-      align: 'center center',
-      gap: 'X',
-      flex: '1',
-      minWidth: '7em',
-      padding: 'A',
-      round: 'Z',
-      theme: 'chip',
-      StatValue: {
-        tag: 'span',
-        text: (el, s) => (s.root.balance ?? 0).toLocaleString('en-US'),
-        fontSize: 'D',
-        lineHeight: 'D',
-        fontWeight: '800',
-        letterSpacing: '-Y'
-      },
-      StatLabel: {
-        tag: 'span',
-        text: '{{ balanceLabel | polyglot }}',
-        fontSize: 'Z',
-        letterSpacing: 'X',
-        textTransform: 'uppercase',
-        theme: 'onVideoMuted'
-      }
+      StatValue: { text: (el, s) => (s.root.balance ?? 0).toLocaleString('en-US') },
+      StatLabel: { text: '{{ balanceLabel | polyglot }}' }
     }
   },
 
   Actions: {
     flow: 'x',
     align: 'center center',
-    gap: 'A',
+    gap: 'spacing4',
     flexWrap: 'wrap',
 
     PlayAgain: {
-      tag: 'button',
-      flow: 'x',
-      align: 'center center',
-      border: 'none',
-      fontFamily: 'inherit',
-      background: 'brand',
-      color: 'white',
-      ':hover': { background: 'brand+8' },
-      round: 'C',
-      padding: 'Z C',
-      fontSize: 'A',
-      fontWeight: '800',
-      letterSpacing: 'X',
-      textTransform: 'uppercase',
-      cursor: 'pointer',
-      ':focus-visible': { outline: '2px solid currentColor', outlineOffset: '2px' },
+      extends: 'CkButtonPrimary',
+      attr: { type: 'button' },
       onClick: (e, el, s) => {
         if (s.root.game) el.call('selectGame', s.root.game.slug)
       },
@@ -217,21 +113,31 @@ export const SessionSummary = {
     },
 
     OtherGame: {
-      tag: 'button',
-      flow: 'x',
-      align: 'center center',
-      fontFamily: 'inherit',
-      theme: 'chip',
-      border: '1px solid white.14',
-      round: 'C',
-      padding: 'Z B',
-      fontSize: 'A',
-      fontWeight: '700',
-      cursor: 'pointer',
-      ':hover': { borderColor: 'white' },
-      ':focus-visible': { outline: '2px solid currentColor', outlineOffset: '2px' },
+      extends: 'CkButtonSecondary',
+      attr: { type: 'button' },
       onClick: (e, el) => el.call('backToPicker'),
       OtherGameLabel: { tag: 'span', text: '{{ otherGame | polyglot }}' }
     }
   }
+}
+
+// Inset stat tile (cards.md inset card): same raised surface, own ink border.
+export const SessionStat = {
+  extends: 'CkCard',
+  flow: 'y',
+  align: 'center center',
+  gap: 'spacing1',
+  flex: '1',
+  minWidth: 'spacing28',
+  padding: 'spacing4',
+
+  StatValue: {
+    tag: 'span',
+    fontFamily: 'mono',
+    fontSize: 'font3xl',
+    lineHeight: '1',
+    fontWeight: '700',
+    color: 'heading'
+  },
+  StatLabel: { extends: 'CkEyebrow' }
 }

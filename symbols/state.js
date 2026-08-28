@@ -1,8 +1,8 @@
 // symbols/state.js
 //
-// The root reactive state — STATE CONTRACT v2. UI components are built
-// against exactly these fields. Do not rename, remove, or nest them without
-// updating every consumer.
+// The root reactive state — STATE CONTRACT v3 (duels). UI components are
+// built against exactly these fields. Do not rename, remove, or nest them
+// without updating every consumer.
 //
 // Written ONLY by the engine in globalScope.js / functions/. The client
 // renders; it never decides (docs/integrity.md §1). In server mode every
@@ -17,22 +17,25 @@ export default {
   // 'picker' — GamePicker is shown. 'playing' — the video stage is shown.
   screen: 'picker',
 
-  // { slug, title, objectiveLine, guessMin, guessMax, guessStep, resultUnit, videoSrc }
+  // { slug, title, objectiveLine, targetLine, resultUnit, videoSrc,
+  //   challengers: [{ side, name, line, poster }] }
   game: null,
 
-  // { id, index, count, betOpenAt, revealAt, pauseAt } — video seconds
+  // { id, index, count, lockAt, revealAt: [s1, s2], endAt } — video seconds.
+  // Betting runs from frame 0 to lockAt; attempt k is read at revealAt[k].
   round: null,
 
-  // 'intro' | 'preview' | 'betting' | 'locked' | 'reveal' | 'results' | 'ended'
-  phase: 'intro',
+  // 'preview' | 'betting' | 'locked' | 'reveal' | 'results' | 'ended'
+  phase: 'preview',
 
   // Whole seconds left in preview/betting/locked/results. 0 otherwise.
+  // During 'betting' this is footage seconds to the lock frame.
   secondsLeft: 0,
 
-  // Live player count for the current round (ticks until LOCK).
+  // Live player count for the current duel (ticks until LOCK).
   playerCount: 0,
 
-  // Live pot for the current round (ticks until LOCK).
+  // Live pot for the current duel (ticks until LOCK).
   pot: 0,
 
   // { playerCount, pot } snapshot taken the instant the phase becomes
@@ -40,27 +43,34 @@ export default {
   // once set, nothing changes it. That is the product.
   frozen: null,
 
-  // Last ~6 crowd arrivals, NAMES ONLY. Guesses stay hidden until reveal.
+  // Last ~6 crowd arrivals, NAMES ONLY. Sides stay hidden until reveal.
   arrivals: [],
 
-  // The guess currently selected in BetPanel, before it is submitted.
-  myGuess: null,
+  // The challenger (1 or 2) currently selected in BetPanel, before submit.
+  mySide: null,
 
-  // { guess, stake } once the caller's bet for this round is confirmed.
+  // { side, stake } once the caller's bet for this duel is confirmed.
   myBet: null,
 
-  // { value, unit, readings: [string] } — set when the footage reaches
-  // reveal_at. null before that. readings = what the scale(s) showed.
+  // { unit, attempts: [a1, a2], winner } — attempts fill in as the footage
+  // reaches each reveal frame; an unrevealed attempt is null. Each attempt
+  // is { side, offset, readings: [string] }. winner is null until the second
+  // attempt is read, then 1, 2, or 0 for a dead heat.
   result: null,
 
-  // { winnerCount, multiplier, payout, iWon, myPayout, distribution:
-  //   [{ guess, count }] } — set at reveal (demo) / results (server).
+  // { winnerCount, multiplier, payout, iWon, myPayout, voided,
+  //   sides: [{ side, count }] } — set at reveal (demo) / results (server).
+  //   voided = no market (dead heat or nobody backed the winner); every
+  //   stake was refunded and the house took nothing.
   settlement: null,
 
   // Current chip balance.
   balance: 0,
 
-  // [{ gameSlug, roundIndex, value, unit }] newest first.
+  // Sound cues (lock, bet, win, loss) on or off. Persisted as zse_sound.
+  sound: true,
+
+  // [{ gameSlug, roundIndex, winner, offsets: [o1, o2], unit }] newest first.
   history: [],
 
   // Human-readable message for the last failed action (most importantly: a

@@ -1,58 +1,62 @@
-// Minimal chrome while the footage plays out: your locked guess, nothing
-// else. Gets out of the way of the scale reading.
+// Minimal chrome while the footage plays out: your locked pick, and, once the
+// first challenger's scale is read, that number, so the second attempt plays
+// as a real contest. An inline "announcement" alert (alerts.md): a badge plus
+// a message, neutral intent, 2px ink border.
 export const RevealChip = {
-  flow: 'x',
-  align: 'baseline center',
-  gap: 'Y',
-  padding: 'Y A',
-  round: 'C',
-  theme: 'glassLocked',
-  border: '1px solid white.24',
-  shadow: 'glass',
+  display: (el, s) => (s.screen === 'playing' && s.phase === 'reveal' ? 'inline-flex' : 'none'),
+  align: 'center center',
+  gap: 'spacing2',
+  padding: 'spacing1 spacing2 spacing1 spacing1',
+  round: 'radiusXxl',
+  theme: 'badgeNeutral',
+  borderWidth: 'spacing0_5',
+  borderStyle: 'solid',
+  borderColor: 'borderDefault',
+  fontFamily: 'sans',
+  fontSize: 'fontSm',
+  lineHeight: '1.3',
   fontVariantNumeric: 'tabular-nums',
   whiteSpace: 'nowrap',
-  animation: 'fadeIn .6s ease-out both',
-  display: (el, s) =>
-    s.screen === 'playing' && s.phase === 'reveal' ? 'flex' : 'none',
+  attr: { role: 'status' },
 
-  RevealLead: {
-    tag: 'span',
-    text: '{{ revealWatching | polyglot }}',
-    fontSize: 'Z',
-    fontWeight: '700',
-    letterSpacing: 'X',
-    textTransform: 'uppercase',
-    theme: 'onVideoMuted'
+  RevealBadge: {
+    extends: 'CkBadge',
+    background: 'neutralQuaternary',
+    color: 'heading',
+    fontSize: 'fontSm',
+    padding: 'spacing0_5 spacing2',
+    Icon: { name: 'lock', boxSize: 'icon14', attr: { 'aria-hidden': 'true' } },
+    RevealLead: { tag: 'span', text: '{{ revealWatching | polyglot }}' }
   },
 
-  RevealDivider: {
+  RevealYourPick: {
     tag: 'span',
-    text: '·',
-    fontSize: 'Z',
-    theme: 'onVideoMuted',
-    display: (el, s) => (s.myBet ? 'inline' : 'none')
-  },
-
-  RevealYourGuess: {
-    tag: 'span',
-    text: '{{ yourGuess | polyglot }}',
-    fontSize: 'Z',
-    theme: 'onVideoMuted',
-    display: (el, s) => (s.myBet ? 'inline' : 'none')
-  },
-
-  RevealValue: {
-    tag: 'span',
+    display: (el, s) => (s.myBet ? 'inline' : 'none'),
     text: (el, s) => {
       if (!s.myBet) return ''
-      const unit = s.game ? s.game.resultUnit : ''
-      const value = s.myBet.guess > 0 ? `+${s.myBet.guess}` : String(s.myBet.guess)
-      return `${value} ${unit}`
-    },
-    fontSize: 'B',
-    fontWeight: '800',
-    letterSpacing: '-X',
-    color: 'gold',
-    display: (el, s) => (s.myBet ? 'inline' : 'none')
+      const c = s.game && s.game.challengers ? s.game.challengers[s.myBet.side - 1] : null
+      return `${s.yourPick || 'Your pick'}: ${c ? c.name : `Challenger ${s.myBet.side}`}`
+    }
+  },
+
+  FirstDivider: {
+    tag: 'span',
+    text: '·',
+    attr: { 'aria-hidden': 'true' },
+    display: (el, s) => (s.myBet && s.result && s.result.attempts && s.result.attempts[0] ? 'inline' : 'none')
+  },
+
+  FirstAttempt: {
+    tag: 'span',
+    fontWeight: '700',
+    display: (el, s) => (s.result && s.result.attempts && s.result.attempts[0] ? 'inline' : 'none'),
+    text: (el, s) => {
+      const a = s.result && s.result.attempts ? s.result.attempts[0] : null
+      if (!a) return ''
+      const c = s.game && s.game.challengers ? s.game.challengers[a.side - 1] : null
+      const name = c ? c.name : `Challenger ${a.side}`
+      const readings = a.readings && a.readings.length ? `${a.readings.join(' / ')} = ` : ''
+      return `${name}: ${readings}${Math.abs(a.offset)} ${s.result.unit} ${s.offWord || 'off'}`
+    }
   }
 }

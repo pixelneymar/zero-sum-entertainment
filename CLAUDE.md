@@ -155,6 +155,21 @@ context, not a finished component. Read the rules, then write the code.
 Use `audit_component` to check what you wrote. It performs real linting and
 catches raw px values, hex colours, and `props:{}` wrappers.
 
+### Two runner traps (verified 2026-08-27)
+
+**Scope functions must not be passed as bare callbacks.** frank rewrites
+every bare reference inside `globalScope.js` to `this.X`. `list.map(wkFoo)`
+therefore calls `wkFoo` with `this` undefined and any scope call inside it
+throws `this.duelWinner is not a function`. Always wrap:
+`list.map((x) => wkFoo(x))`.
+
+**The runner caches the bundle.** `smbls runner serve` writes
+`.symbols_local/symbols-runner-cache/` and can answer `cache hit — skipping
+bundle` after a `globalScope.js` edit, serving stale code even after a hard
+reload. If a change does not show up, stop the runner, delete that
+directory, and start it again. `curl -sk <url> | grep <new-code>` proves
+which bundle is being served.
+
 ### Workspace
 
 `https://my.symbols.app/w/zero-sum-entertainment/default`
@@ -195,8 +210,11 @@ to run it. Do not try to run it from a tool call.
 
 ## The product
 
-A betting layer over short physical-challenge videos. Users bet on **how far
-off** an attempt lands. Closest 10% split the pot, 5% rake.
+A betting layer over short physical-challenge videos. Each video is a duel:
+two challengers attempt the same task in turn, and users bet on **which one
+lands closer** (a side, at the standard 20-chip stake). Backers of the winner
+split the pot, 5% rake; a dead heat refunds. The video plays from frame 0 and
+never pauses — betting runs over the intro and locks on a frame.
 
 Read `docs/README.md` first. Read `docs/integrity.md` before changing anything
 that touches bets, rounds, results, or chips.
@@ -268,7 +286,7 @@ proves the engine, not the video.
    failure.
 4. Read the console with `read_console_messages`. Any uncaught error fails the
    task.
-5. Exercise the actual behaviour — click, select a guess, place a bet. Do not
+5. Exercise the actual behaviour — click, pick a challenger, place a bet. Do not
    only load the page.
 6. Report what you SAW, not what you expect. If it did not render, say so.
 
@@ -287,7 +305,8 @@ a guarantee:
 
 - a bet inserted after `betting_closes_at` is REJECTED by the database
 - `round_results` returns zero rows before `reveal_at`
-- another user's `guess` is unreadable before `reveal_at`
+- another user's `guess` (side) is unreadable before `reveal_at`
+- `round_attempts` returns zero rows for an attempt before its `visible_at`
 - `settle_round` run twice writes one set of ledger rows
 - `sum(chip_ledger.amount)` equals `balances.balance` after every settlement
 
@@ -314,6 +333,54 @@ supabase storage cp --experimental symbols/assets/videos/banana.mp4 ss:///videos
 
 Round timings and results are in `docs/rounds.md`. They were read from the
 footage frame by frame. If a video is re-cut, re-verify every result.
+
+## Design system: TypeUI Cypherpunk (game surfaces)
+
+The game (picker + stage) is styled with the purchased TypeUI design skill
+**Cypherpunk**. The binding specs are project-local skills:
+
+- `.claude/skills/typeui-design-system/*.md` (34 files; `colors.md`,
+  `typography.md`, `spacing.md`, `radius.md`, `shadows.md`, `buttons.md`,
+  `cards.md`, `badges.md`, `alerts.md` are the ones the game uses).
+- `.claude/skills/typeui-fundamentals/*.md`: accessibility and UX guardrails.
+  They win over the design skill (44px targets, 16px interactive text, 2px
+  focus ring with 2px offset, computed contrast, reduced motion).
+
+Signature: one lime section surface (`neutralSecondarySoft` #D8FF7C), ink
+text and 2px ink borders (`body`, `borderDefault` #1C1C1C), raised beige
+cards (`neutralPrimarySoft` #EAE5DB), 2px corners (`radiusXxl`), no resting
+shadows, Inter for UI and Space Mono for display type and eyebrows.
+
+Implementation layer:
+
+| Where | What |
+| --- | --- |
+| `symbols/designSystem/color.js` | registry tokens in camelCase. The registry's `brand` family is `brandInk*` because `brand` (red) still belongs to the workspace. |
+| `symbols/designSystem/sizes.js` | `spacing*`, `radius*`, `font*` tokens. Named sizes resolve for ANY length property, which is how the 4px grid coexists with the letter sequence. |
+| `symbols/designSystem/theme.js` | `document`, `raised`, `brandFill`, `badge*`, `disabledCtl`. `chip`, `danger`, `ws*` are the workspace's. |
+| `symbols/designSystem/font.js`, `fontFamily.js`, `media.js` | Google Fonts imports, `sans`/`mono` families, the `@reducedMotion` media key. |
+| `symbols/components/CkPrimitives.js` | `CkCard`, `CkBadge*`, `CkButton*`, `CkLink`, `CkEyebrow`. Every game component extends one of these. |
+| `symbols/components/TypeuiPanel.js` | The fixed "TypeUI" pill the MCP setting `typeuiPanelEnabled` mandates. Turn it off in the TypeUI dashboard, not by deleting the component. |
+
+Runtime traps (verified): `letterSpacing`, `backgroundSize` and anything in
+`attr` are NOT run through the size resolver (use literal values); polyglot
+templates do not interpolate inside `attr`; an icon child must be named
+`Icon` or `extends: 'Icon'`; `outline: '2px solid currentColor'` compiles to
+a broken var, so focus rings use a colour token; `globalScope.js` edits can
+be served stale until the runner cache is deleted (see Symbols section).
+
+The workspace console (`Ws*`) keeps its own dark palette; it is out of scope
+for the Cypherpunk restyle.
+
+Sound cues live in `globalScope.js` (`audioCue`, Web Audio, no assets):
+bet placed, lock, win, loss, dead heat. `audioOnPatch` listens to the same
+state patches the engine writes; it never decides anything. The
+`SoundToggle` persists `zse_sound`; `state.sound` mirrors it.
+
+The TypeUI MCP section workflow (`typeui_start_ui_generation` ->
+`get_next_section` -> `report_section_cleanup`) loses its generation between
+calls after roughly a minute. File receipts back-to-back or keep the
+per-section cleanup loop local and document it.
 
 ## Workspace dashboard (`/workspace`)
 

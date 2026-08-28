@@ -56,6 +56,17 @@ if [ -n "$PEND" ]; then
   n=$(api "round_results?round_id=eq.$PEND&select=result_value" | python3 -c "import json,sys; print(len(json.load(sys.stdin)))" 2>/dev/null || echo ERR)
   [ "$n" = "0" ] && ok "pending round leaks no result (0 rows)" \
                  || bad "RESULT LEAK — the product's core claim" "0 rows" "$n rows"
+  # duel: each attempt is gated on its own visible_at (integrity.md §8)
+  a=$(api "round_attempts?round_id=eq.$PEND&select=side,offset_value,visible_at" | python3 -c "
+import json,sys,datetime
+try: rs=json.load(sys.stdin)
+except: print('ERR'); sys.exit()
+now=datetime.datetime.now(datetime.timezone.utc)
+early=[r for r in rs if isinstance(rs,list) and datetime.datetime.fromisoformat(r['visible_at'].replace('Z','+00:00'))>now]
+print(len(early))" 2>/dev/null || echo ERR)
+  if [ "$a" = "ERR" ]; then echo "  SKIP  round_attempts not present yet (duel migration not applied)"
+  elif [ "$a" = "0" ]; then ok "no attempt readable before its visible_at (0 early rows)"
+  else bad "ATTEMPT LEAK — a challenger's reading is readable early" "0 rows" "$a rows"; fi
 else
   echo "  SKIP  no pending round scheduled"
 fi
@@ -68,7 +79,7 @@ try:
 except: print('')")
 if [ -n "$R" ]; then
   c=$(curl -sS -o /dev/null -w "%{http_code}" "${H[@]}" -X POST "$URL/rest/v1/bets" \
-        -d "{\"round_id\":\"$R\",\"user_id\":\"00000000-0000-0000-0000-000000000000\",\"guess\":0}" --max-time 25)
+        -d "{\"round_id\":\"$R\",\"user_id\":\"00000000-0000-0000-0000-000000000000\",\"guess\":1}" --max-time 25)
   { [ "$c" = "401" ] || [ "$c" = "403" ] || [ "$c" = "404" ]; } \
     && ok "direct INSERT into bets rejected ($c) — free bets impossible" \
     || bad "DIRECT BET INSERT ACCEPTED — bets are free" "401/403/404" "$c"

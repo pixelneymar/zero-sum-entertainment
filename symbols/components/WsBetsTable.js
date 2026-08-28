@@ -8,7 +8,7 @@ export const WsBetsTable = {
 
   Head: {
     display: 'grid',
-    gridTemplateColumns: '14em 11em 6em 4em 6em 8em',
+    gridTemplateColumns: '14em 9em 4em 6em 8em',
     alignItems: 'center',
     gap: 'Y',
     padding: 'Y 0',
@@ -22,7 +22,6 @@ export const WsBetsTable = {
 
     ThPlayer: { tag: 'span', fontSize: 'Y', padding: '0 Z', text: '{{ wsColPlayer | polyglot }}' },
     ThGuess: { tag: 'span', fontSize: 'Y', text: '{{ wsColGuess | polyglot }}' },
-    ThDistance: { tag: 'span', fontSize: 'Y', textAlign: 'right', text: '{{ wsColDistance | polyglot }}' },
     ThWon: { tag: 'span', fontSize: 'Y', textAlign: 'center', text: '{{ wsColWon | polyglot }}' },
     ThPayout: { tag: 'span', fontSize: 'Y', textAlign: 'right', text: '{{ wsColPayout | polyglot }}' },
     ThPlaced: { tag: 'span', fontSize: 'Y', text: '{{ wsColPlaced | polyglot }}' }

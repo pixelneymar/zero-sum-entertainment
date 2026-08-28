@@ -54,7 +54,45 @@ are ever introduced, `multiplier` stops being one number per round and the
 whole section must be rewritten as a stake-weighted split. Do not add variable
 stakes without doing that work.
 
-## 3. Winner selection — `nearest`
+## 3. Winner selection
+
+Two predicates exist. `duel` is the launch shape; `nearest` is kept for a
+future single-attempt game and is unchanged.
+
+### 3.1 `duel` — the launch shape
+
+One video is one duel. Two challengers attempt the same task in turn. Each
+attempt lands some absolute distance from the target (`round_attempts.
+offset_value`, read off the scale in the frame). The result is the **winning
+side**:
+
+```
+result_value = 1   if abs(offset_1) < abs(offset_2)
+             = 2   if abs(offset_2) < abs(offset_1)
+             = 0   if they are equal            -- dead heat
+```
+
+A bet is a side. `bets.guess` holds 1 or 2 and nothing else; the stake is the
+standard 20 chips. The winners are every bet on the winning side:
+
+```sql
+b.guess = result_value          -- and result_value in (1, 2)
+```
+
+No ranking, no ties at a cut-off, no `WINNER_FRACTION`: the share is whatever
+fraction of the crowd backed the winner. A lopsided crowd pays the minority
+little; a contrarian crowd pays a lot. The payout maths in §4 is unchanged.
+
+### 3.2 `duel` — no market
+
+If `result_value = 0` (dead heat), or nobody backed the winning side,
+there is no market. The round **voids**: every stake is refunded with one
+`refund` ledger row per bet, and the house takes nothing. The round nets to
+zero in the ledger exactly as a paid round does. This is Crowdflip's rule
+(`reference-crowdflip.md` §3) and the answer to `decisions.md` O3 for this
+shape.
+
+### 3.3 `nearest` — kept, not used at launch
 
 Distance is absolute error against the result:
 
@@ -224,11 +262,13 @@ refund this game's round the same way, whenever
 
 | Case | Rule |
 |---|---|
+| Dead heat (`duel`) | Voided. Every stake refunded, no rake, no payout rows. §3.2. |
+| Nobody backed the winner (`duel`) | Voided, the same way. §3.2. |
 | Zero bets | `settle_round` still claims the round and marks it settled (`data-model.md` §6, step 2), then branches before the payout maths (step 4): no ledger rows are written, `winner_count/multiplier/payout` return as `0/null/0`. `prize / winner_count` never executes — dividing by zero is not caught, it is never reached. |
 | One bet | That bet wins. `payout = floor(0.95 × 20) = 19`, `multiplier = 19 / 20 = 0.95`. Player loses 1 chip to rake. |
 | All guesses identical | All win. See §5 example 4. |
 | Insufficient balance | Bet rejected inside `place_bet()`, before insert. Never a negative balance. |
-| Guess outside the game's range | Rejected inside `place_bet()`, before insert. See `integrity.md` §3. |
+| Guess outside the game's range | Rejected inside `place_bet()`, before insert. See `integrity.md` §3. For `duel` the range is `1 .. 2`. |
 | Result outside guess range | Legal. The nearest guess still wins, however far off. |
 | Round never settled | Stakes stay debited until settlement runs. Settlement is idempotent and can be re-run safely. |
 

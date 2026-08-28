@@ -1,38 +1,21 @@
+// Chip balance on the stage top bar: label, tabular value, unit.
 export const BalanceChip = {
   flow: 'x',
   align: 'baseline center',
-  gap: 'Y',
-  padding: 'Y A',
-  round: 'C',
-  theme: 'glass',
-  border: '1px solid white.12',
-  shadow: 'glass',
-  backdropFilter: 'blur(1.1rem)',
+  gap: 'spacing1_5',
   fontVariantNumeric: 'tabular-nums',
   whiteSpace: 'nowrap',
+  color: 'body',
 
-  BalanceLabel: {
-    tag: 'span',
-    text: '{{ balanceLabel | polyglot }}',
-    fontSize: 'Z',
-    fontWeight: '700',
-    letterSpacing: 'X',
-    textTransform: 'uppercase',
-    theme: 'onVideoMuted'
-  },
-
+  BalanceLabel: { extends: 'CkEyebrow', text: '{{ balanceLabel | polyglot }}' },
   BalanceValue: {
     tag: 'span',
-    text: (el, s) => (s.balance ?? 0).toLocaleString('en-US'),
-    fontSize: 'B',
-    fontWeight: '800',
-    letterSpacing: '-X'
+    fontFamily: 'mono',
+    fontSize: 'font2xl',
+    lineHeight: '1.3',
+    fontWeight: '700',
+    color: 'heading',
+    text: (el, s) => (s.balance ?? 0).toLocaleString('en-US')
   },
-
-  BalanceUnit: {
-    tag: 'span',
-    text: '{{ chipsUnit | polyglot }}',
-    fontSize: 'Z',
-    theme: 'onVideoMuted'
-  }
+  BalanceUnit: { tag: 'span', fontSize: 'fontSm', lineHeight: '1.3', text: '{{ chipsUnit | polyglot }}' }
 }

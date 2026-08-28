@@ -53,11 +53,14 @@ PREVIEW → BETTING → LOCKED → REVEAL → RESULTS → (next round)
 
 | State | Duration | Video | What happens |
 |---|---|---|---|
-| PREVIEW | 5 s | paused at `bet_open` | Objective banner. Countdown to open. |
-| BETTING | 25 s | paused at `bet_open` | Bets open. Pot and player count tick up. One bet per user. |
-| LOCKED | 5 s | starts playing | Nothing can change. The frozen counters are the product. |
-| REVEAL | to `reveal` mark | playing | The attempt plays out. Overlay stays minimal. |
-| RESULTS | 8 s | paused at `pause` mark | Result, winners, multiplier, payout. |
+| PREVIEW | 5 s (server only) | held at frame 0 | Objective banner. Countdown to open. |
+| BETTING | `lock_at` s (17–20) | **playing** 0 → `lock_at` | Bets open over the hosts' intro. Pot and player count tick up. One bet per user: a side. |
+| LOCKED | 5 s | playing | Nothing can change. The frozen counters are the product. |
+| REVEAL | to `reveal_2` | playing | Side 1 is read at `reveal_1` and shown. Side 2 plays out. |
+| RESULTS | 8 s | playing to the last frame | Side 2 is read; the winner, backers, multiplier, payout. |
+
+**The video never pauses once it starts.** Round timing is the footage's own
+timing (`rounds.md`). Betting ends on a frame, not on a timer.
 
 **The hard rule, unchanged from v0.1:** at the instant LOCKED begins, the bet
 list, the player count and the pot are final. A bet that arrives one
@@ -74,9 +77,9 @@ and the round's video offsets:
 
 ```
 PREVIEW  duration = betting_opens_at   − preview_starts_at   =  5 s
-BETTING  duration = betting_closes_at  − betting_opens_at    = 25 s
+BETTING  duration = betting_closes_at  − betting_opens_at    = lock_at s (the footage before the lock frame)
 RESULTS  duration = results_end_at     − result_visible_at   =  8 s
-LOCKED + REVEAL    = result_visible_at − betting_closes_at   = variable, video-dependent
+LOCKED + REVEAL    = result_visible_at − betting_closes_at   = reveal_2 − lock_at, video-dependent
 ```
 
 `result_visible_at` is **not** `betting_closes_at + 5 s`. It is the

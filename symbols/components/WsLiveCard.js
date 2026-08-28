@@ -1,5 +1,5 @@
 // One active game. Child state: { gameSlug, gameTitle, roundIndex, phase,
-// secondsLeft, playerCount, pot, frozen }. From LOCK onward the frozen
+// lockAt, secondsLeft, playerCount, pot, frozen }. From LOCK onward the frozen
 // snapshot is what renders — the live counters are hidden, not re-read.
 export const WsLiveCard = {
   extends: 'WsPanel',
@@ -73,7 +73,7 @@ export const WsLiveCard = {
             'stroke-linecap': 'round',
             'stroke-dasharray': '276.46',
             'stroke-dashoffset': (el, s) => {
-              const totals = { preview: 5, betting: 25, locked: 5, results: 8 }
+              const totals = { preview: 5, betting: Number(s.lockAt) || 20, locked: 5, results: 8 }
               const total = totals[s.phase] || 1
               const left = Math.max(0, Math.min(total, s.secondsLeft ?? 0))
               const fraction = s.phase === 'locked' ? 1 : left / total

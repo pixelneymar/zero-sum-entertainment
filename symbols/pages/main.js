@@ -24,116 +24,125 @@ export const main = {
     position: 'relative',
     display: (el, s) => (s.screen === 'picker' ? 'flex' : 'none'),
     flow: 'y',
-    align: 'center center',
+    align: 'stretch flex-start',
     width: '100%',
     minHeight: '100vh',
-    padding: 'C',
-    gap: 'B',
 
     PickerBadge: {
       position: 'absolute',
-      top: 'B',
-      right: 'B',
+      top: 'spacing6',
+      right: 'spacing6',
       DemoBadge: {}
     },
 
     // Data-layer failures must be visible on every screen.
-    ErrorBanner: {},
+    ErrorSlot: {
+      width: '100%',
+      maxWidth: 'containerMax',
+      margin: '0 auto',
+      padding: 'spacing4 spacing6 0',
+      '@tabletS': { padding: 'spacing4 spacing4 0' },
+      ErrorBanner: {}
+    },
     GamePicker: {}
   },
 
+  // Required by the TypeUI MCP workspace setting (see TypeuiPanel.js).
+  TypeuiPanel: {},
+
   // ---- the stage ----------------------------------------------------------
+  // A lime section (document theme) with the grid texture; a flush beige top
+  // bar (TypeUI section 3, application navbar); the framed 16:9 video centred
+  // in the remaining space; and a HUD layer of raised cards on top.
   Stage: {
-    display: (el, s) => (s.screen === 'playing' ? 'block' : 'none'),
+    display: (el, s) => (s.screen === 'playing' ? 'flex' : 'none'),
+    flow: 'y',
+    align: 'stretch flex-start',
     position: 'fixed',
     inset: '0 0 0 0',
     overflow: 'hidden',
-    background: 'ink',
-    color: 'white',
+    theme: 'document',
+    backgroundImage: 'gridTexture',
+    backgroundSize: '2rem 2rem',
+    backgroundPosition: 'left top',
 
-    StageBackdrop: {},
+    TopBar: {
+      tag: 'header',
+      flexShrink: '0',
+      display: 'grid',
+      columns: '1fr auto 1fr',
+      alignItems: 'center',
+      gap: 'spacing4',
+      padding: 'spacing3 spacing6',
+      '@tabletS': { padding: 'spacing3 spacing4' },
+      theme: 'raised',
+      borderBottomWidth: 'spacing0_5',
+      borderBottomStyle: 'solid',
+      borderBottomColor: 'borderDefault',
 
-    Frame: {
-      position: 'absolute',
-      top: '50%',
-      left: '50%',
-      transform: 'translate(-50%, -50%)',
-      width: 'min(100vw, calc(100vh * 16 / 9))',
-      aspectRatio: '16 / 9',
-      VideoSurface: {}
+      TopLeft: {
+        flow: 'x',
+        align: 'center flex-start',
+        gap: 'spacing3',
+        flexWrap: 'wrap',
+        RoundChip: {},
+        DemoBadge: {}
+      },
+
+      TopCentre: {
+        flow: 'y',
+        align: 'center center',
+        gap: 'spacing2',
+        PhaseTimer: {},
+        RevealChip: {},
+        ErrorBanner: {}
+      },
+
+      TopRight: {
+        flow: 'x',
+        align: 'center flex-end',
+        gap: 'spacing4',
+        flexWrap: 'wrap',
+        BalanceChip: {},
+        SoundToggle: {},
+        ExitButton: {}
+      }
     },
 
-    ScrimTop: {
-      position: 'absolute',
-      top: '0',
-      left: '0',
-      right: '0',
-      height: 'F',
-      background: 'scrimTop',
-      pointerEvents: 'none'
-    },
+    Body: {
+      position: 'relative',
+      flex: '1',
+      minHeight: '0',
+      flow: 'y',
+      align: 'center center',
 
-    ScrimBottom: {
-      position: 'absolute',
-      bottom: '0',
-      left: '0',
-      right: '0',
-      height: 'G',
-      background: 'scrimBottom',
-      pointerEvents: 'none',
-      transition: 'B defaultBezier',
-      transitionProperty: 'opacity',
-      opacity: (el, s) => (s.phase === 'reveal' ? '.35' : '1')
-    },
+      // Height-driven 16:9 frame: as wide as the body height allows, never
+      // wider than the viewport (then the footage letterboxes inside).
+      Frame: {
+        height: '100%',
+        width: 'auto',
+        maxWidth: '100%',
+        aspectRatio: '16 / 9',
+        background: 'darkStrong',
+        borderWidth: 'spacing0_5',
+        borderStyle: 'solid',
+        borderColor: 'borderDefault',
+        round: 'radiusXxl',
+        overflow: 'hidden',
+        VideoSurface: {}
+      },
 
-    Hud: {
+      // HUD layer over the video body only; the top bar is not covered.
+      Hud: {
       position: 'absolute',
       inset: '0 0 0 0',
       pointerEvents: 'none',
 
-      TopBar: {
-        position: 'absolute',
-        top: 'B',
-        left: 'B',
-        right: 'B',
-        display: 'grid',
-        columns: '1fr auto 1fr',
-        alignItems: 'start',
-        gap: 'A',
-
-        TopLeft: {
-          flow: 'x',
-          align: 'center flex-start',
-          gap: 'Y',
-          flexWrap: 'wrap',
-          pointerEvents: 'auto',
-          RoundChip: {},
-          DemoBadge: {}
-        },
-
-        TopCentre: {
-          flow: 'y',
-          align: 'center center',
-          gap: 'Y',
-          pointerEvents: 'auto',
-          PhaseTimer: {},
-          RevealChip: {},
-          ErrorBanner: {}
-        },
-
-        TopRight: {
-          flow: 'x',
-          align: 'center flex-end',
-          gap: 'Y',
-          pointerEvents: 'auto',
-          BalanceChip: {},
-          ExitButton: {}
-        }
-      },
-
+      // Narrow viewports: the crowd widget moves into the dock (below).
       LeftRail: {
         position: 'absolute',
-        left: 'B',
+        left: 'spacing6',
+        '@tabletS': { display: 'none' },
         top: '50%',
         transform: 'translateY(-50%)',
         pointerEvents: 'auto',
@@ -142,7 +151,7 @@ export const main = {
 
       RightRail: {
         position: 'absolute',
-        right: 'B',
+        right: 'spacing6',
         top: '50%',
         transform: 'translateY(-50%)',
         pointerEvents: 'auto',
@@ -150,13 +159,31 @@ export const main = {
         HistoryPanel: {}
       },
 
+      // 80px from the bottom so the fixed TypeUI panel never covers the dock.
       BottomDock: {
         position: 'absolute',
-        bottom: 'B',
+        bottom: 'spacing20',
         left: '50%',
         transform: 'translateX(-50%)',
         pointerEvents: 'auto',
-        BetPanel: {}
+        flow: 'y',
+        align: 'center flex-end',
+        gap: 'spacing3',
+        width: 'dock',
+        maxWidth: '94vw',
+        MobileCrowd: {
+          display: 'none',
+          '@tabletS': { display: 'block' },
+          width: '100%',
+          // Compact: head + stats only, so the stack clears the top bar.
+          CrowdPanel: {
+            width: '100%',
+            display: (el, s) => (s.screen === 'playing' && s.phase !== 'ended' ? 'flex' : 'none'),
+            Ticker: { display: 'none' },
+            FrozenNote: { display: 'none' }
+          }
+        },
+        BetPanel: { width: '100%' }
       },
 
       Centre: {
@@ -169,6 +196,7 @@ export const main = {
         ResultsCard: { pointerEvents: 'auto' },
         SessionSummary: { pointerEvents: 'auto' }
       }
+    }
     }
   }
 }

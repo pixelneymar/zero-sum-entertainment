@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "source": "workspace-visual-schema",
+  "name": "Cypherpunk",
+  "slug": "cypherpunk",
+  "project": {
+    "name": "Cypherpunk",
+    "logoUrl": null
+  },
+  "importSource": {
+    "type": "manual",
+    "importedAt": "2026-08-28T10:26:09.208Z",
+    "sourceName": "TypeUI design skill: Cypherpunk"
+  },
+  "components": [
+    "color",
+    "typography",
+    "radius",
+    "shadow",
+    "button",
+    "button-group",
+    "card",
+    "alert",
+    "badge",
+    "checkbox",
+    "radio",
+    "toggle",
+    "accordion",
+    "tabs",
+    "pagination",
+    "dropdown",
+    "modal",
+    "tooltip",
+    "table"
+  ]
+}

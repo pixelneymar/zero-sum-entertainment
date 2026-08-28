@@ -407,3 +407,12 @@ server-authoritative rebuild replaces wholesale.
 model, and the payout formula. The herd "sag" pulse (index.html:969) is
 genuinely path-only — it perturbs the animation, not the final counts — so it
 is safe to reuse for making a *real* crowd feel alive.
+
+
+## 8. Duels: the second gate (added 2026-08-27)
+
+`round_attempts` is time-gated the same way as `round_results`, per row: the
+policy is `clock_timestamp() >= round_attempts.visible_at`. Side 1's offset
+unseals when the footage reaches its scale (`video_reveal_1_s`), side 2's at
+`result_visible_at`. Neither is readable during betting. `tests/integrity.sh`
+§3 checks both tables.

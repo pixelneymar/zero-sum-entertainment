@@ -1,6 +1,6 @@
-// Round detail: header with the result and readings, the distribution with
-// the result marked, and the bet list. Pre-reveal rows are sealed by the
-// source; this view never fills them in.
+// Round detail: header with the winner and each attempt's reading, the
+// crowd split with the winning side marked, and the bet list. Pre-reveal
+// rows are sealed by the source; this view never fills them in.
 export const WsRoundDetail = {
   flow: 'y',
   align: 'stretch flex-start',
@@ -106,7 +106,7 @@ export const WsRoundDetail = {
               const r = ((s.ws || {}).roundDetail || {}).round || {}
               if (r.result == null) return ''
               const v = Number(r.result)
-              return `${v > 0 ? '+' : ''}${v} ${r.unit || ''}`
+              return v === 0 ? s.wsDeadHeat || 'Dead heat' : `${s.wsChallenger || 'Challenger'} ${v}`
             }
           },
           WsSealedCell: {
@@ -122,7 +122,17 @@ export const WsRoundDetail = {
             theme: 'wsMuted',
             text: (el, s) => {
               const r = ((s.ws || {}).roundDetail || {}).round || {}
-              return r.readings && r.readings.length ? `· ${r.readings.join(' / ')}` : ''
+              const readings = r.readings || []
+              const offsets = r.offsets || []
+              if (!readings.length && !offsets.length) return ''
+              const n = Math.max(readings.length, offsets.length)
+              const parts = []
+              for (let i = 0; i < n; i++) {
+                const rd = readings[i] ? readings[i] : ''
+                const off = offsets[i] == null ? '' : `${Math.abs(Number(offsets[i]))} ${r.unit || ''} off`
+                parts.push(`C${i + 1} ${[rd, off].filter(Boolean).join(' → ')}`)
+              }
+              return `· ${parts.join(' · ')}`
             }
           }
         }

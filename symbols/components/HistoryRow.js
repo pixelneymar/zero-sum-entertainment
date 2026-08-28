@@ -1,26 +1,60 @@
+// One past duel: who won and by what margins. Child state: a history entry
+// { roundIndex, winner, offsets: [o1, o2], unit }; s.root is the app state.
+// Flush list row with a 2px ink rule (tables.md flush data, radius none).
 export const HistoryRow = {
+  tag: 'li',
   flow: 'x',
   align: 'center space-between',
-  gap: 'A',
-  padding: 'X 0',
-  borderBottom: '1px solid white.10',
+  gap: 'spacing2',
+  padding: 'spacing2 0',
+  borderBottomWidth: 'spacing0_5',
+  borderBottomStyle: 'solid',
+  borderBottomColor: 'borderDefault',
+  ':last-child': { borderBottomWidth: '0' },
+  fontSize: 'fontSm',
+  lineHeight: '1.5',
+  color: 'body',
   fontVariantNumeric: 'tabular-nums',
 
-  RoundTag: {
-    tag: 'span',
-    text: (el, s) => `#${s.roundIndex}`,
-    fontSize: 'Z',
-    theme: 'onVideoMuted'
+  RoundTag: { tag: 'span', color: 'bodySubtle', text: (el, s) => `#${s.roundIndex}` },
+
+  WinnerText: {
+    flow: 'x',
+    align: 'center flex-start',
+    gap: 'spacing1',
+    minWidth: '0',
+    flex: '1',
+    WinIcon: {
+      extends: 'Icon',
+      name: 'trophy',
+      boxSize: 'icon14',
+      flexShrink: '0',
+      attr: { 'aria-hidden': 'true' },
+      display: (el, s) => (s.winner === 0 ? 'none' : 'block')
+    },
+    WinnerName: {
+      tag: 'span',
+      fontWeight: '700',
+      whiteSpace: 'nowrap',
+      overflow: 'hidden',
+      textOverflow: 'ellipsis',
+      text: (el, s) => {
+        if (s.winner === 0) return s.root.deadHeat || 'Dead heat'
+        const names = (s.root.game && s.root.game.challengers) || []
+        const c = names[s.winner - 1]
+        return c ? c.name : `Challenger ${s.winner}`
+      }
+    }
   },
 
-  ResultText: {
+  OffsetsText: {
     tag: 'span',
+    color: 'bodySubtle',
+    whiteSpace: 'nowrap',
     text: (el, s) => {
-      const value = s.value > 0 ? `+${s.value}` : String(s.value)
-      return `${value} ${s.unit}`
-    },
-    fontSize: 'A',
-    fontWeight: '700',
-    color: (el, s) => (Math.abs(s.value) <= 1 ? 'mint' : 'white')
+      const o = Array.isArray(s.offsets) ? s.offsets : []
+      if (o.length < 2 || o[0] == null || o[1] == null) return ''
+      return `${Math.abs(o[0])} · ${Math.abs(o[1])} ${s.unit || ''}`
+    }
   }
 }

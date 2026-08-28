@@ -1,44 +1,37 @@
 // The hard LOCK moment. Appears the instant phase becomes 'locked' and holds
-// for that phase: a stamped, slightly rotated seal over the footage while the
-// counters around it freeze. No backdrop-filter here: Chrome mis-composites
-// backdrop-filter together with an animated transform over a <video>.
+// for that phase: an ink stamp over the footage while the counters around it
+// freeze. No backdrop-filter here: Chrome mis-composites backdrop-filter
+// together with an animated transform over a <video>.
 export const LockStamp = {
+  extends: 'CkCard',
+  theme: 'brandFill',
   flow: 'y',
   align: 'center center',
-  gap: 'Y',
-  padding: 'A C',
-  border: '.22rem solid white',
-  round: 'Z',
-  theme: 'glassLocked',
-  shadow: 'lock',
+  gap: 'spacing2',
+  padding: 'spacing5 spacing8',
   textAlign: 'center',
-  animation: 'stampIn .55s cubic-bezier(.2, .9, .3, 1.2) both',
-  display: (el, s) =>
-    s.screen === 'playing' && s.phase === 'locked' ? 'flex' : 'none',
+  fontFamily: 'sans',
+  animation: 'popIn .25s ease-out both',
+  '@reducedMotion': { animation: 'none' },
+  attr: { role: 'status' },
+  display: (el, s) => (s.screen === 'playing' && s.phase === 'locked' ? 'flex' : 'none'),
 
   StampHead: {
     flow: 'x',
     align: 'center center',
-    gap: 'Z',
-
-    Icon: { name: 'lock', boxSize: 'D', color: 'white' },
-
+    gap: 'spacing3',
+    Icon: { name: 'lock', boxSize: 'icon20', attr: { 'aria-hidden': 'true' } },
     StampWord: {
       tag: 'span',
-      text: '{{ lockedStamp | polyglot }}',
-      fontSize: 'H',
-      lineHeight: 'H',
-      fontWeight: '900',
-      letterSpacing: 'Y',
-      textTransform: 'uppercase'
+      fontFamily: 'mono',
+      fontSize: 'font5xl',
+      lineHeight: '1',
+      fontWeight: '700',
+      letterSpacing: '0.1rem',
+      textTransform: 'uppercase',
+      text: '{{ lockedStamp | polyglot }}'
     }
   },
 
-  StampNote: {
-    tag: 'span',
-    text: '{{ lockedPromise | polyglot }}',
-    fontSize: 'A',
-    fontWeight: '600',
-    theme: 'onVideoMuted'
-  }
+  StampNote: { tag: 'span', fontSize: 'fontMd', lineHeight: '1.5', text: '{{ lockedPromise | polyglot }}' }
 }

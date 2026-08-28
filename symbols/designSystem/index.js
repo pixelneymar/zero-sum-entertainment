@@ -8,6 +8,9 @@ import shadow from './shadow.js'
 import sizes from './sizes.js'
 import gradient from './gradient.js'
 import icons from './icons.js'
+import font from './font.js'
+import fontFamily from './fontFamily.js'
+import media from './media.js'
 
 export default {
   color,
@@ -19,5 +22,8 @@ export default {
   animation,
   shadow,
   sizes,
-  icons
+  icons,
+  font,
+  fontFamily,
+  media
 }

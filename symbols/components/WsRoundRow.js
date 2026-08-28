@@ -57,7 +57,7 @@ export const WsRoundRow = {
       text: (el, s) => {
         if (s.sealed || s.result == null) return '—'
         const v = Number(s.result)
-        return `${v > 0 ? '+' : ''}${v} ${s.unit || ''}`
+        return v === 0 ? s.root.wsDeadHeat || 'Dead heat' : `${s.root.wsChallenger || 'Challenger'} ${v}`
       }
     },
     Readings: {
@@ -66,7 +66,11 @@ export const WsRoundRow = {
       whiteSpace: 'nowrap',
       overflow: 'hidden',
       textOverflow: 'ellipsis',
-      text: (el, s) => (s.readings && s.readings.length ? s.readings.join(' / ') : '')
+      text: (el, s) => {
+        const o = s.offsets || []
+        if (o.length >= 2 && o[0] != null && o[1] != null) return `${Math.abs(Number(o[0]))} · ${Math.abs(Number(o[1]))} ${s.unit || ''}`
+        return s.readings && s.readings.length ? s.readings.join(' · ') : ''
+      }
     }
   },
   PlayersCell: { tag: 'span', textAlign: 'right', text: (el, s) => Math.round(Number(s.players) || 0).toLocaleString('en-US') },

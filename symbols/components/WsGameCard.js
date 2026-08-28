@@ -1,5 +1,5 @@
-// Game config card. Child state: a game { slug, title, active, guessMin,
-// guessMax, guessStep, unit, videoSrc, scripts }. The Active toggle and
+// Game config card. Child state: a game { slug, title, active, sides, unit,
+// videoSrc, scripts }. The Active toggle and
 // Schedule button are management writes — staff-gated on the server.
 export const WsGameCard = {
   extends: 'WsPanel',
@@ -46,8 +46,7 @@ export const WsGameCard = {
     gap: 'A',
     childrenAs: 'state',
     children: (el, s) => [
-      { labelKey: 'wsRange', value: `${s.guessMin ?? '?'} … +${s.guessMax ?? '?'}`, small: true },
-      { labelKey: 'wsStep', value: String(s.guessStep ?? 1), small: true },
+      { labelKey: 'wsSides', value: String(s.sides ?? 2), small: true },
       { labelKey: 'wsUnit', value: String(s.unit || ''), small: true }
     ],
     childExtends: 'WsKpi'
@@ -99,7 +98,7 @@ export const WsGameCard = {
       childrenAs: 'state',
       children: (el, s) => {
         const scripts = s.scripts || []
-        const max = scripts.reduce((m, r) => Math.max(m, Number(r.pauseAt) || 0), 0) || 1
+        const max = scripts.reduce((m, r) => Math.max(m, Number(r.endAt) || 0), 0) || 1
         return scripts.map((r) => ({ ...r, unit: s.unit, max }))
       },
       childExtends: 'WsScriptTimeline'

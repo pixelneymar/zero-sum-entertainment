@@ -1,8 +1,8 @@
-// One bet. Child state: a bet. guess === null means sealed: the lock glyph
-// replaces the guess and the derived columns stay blank.
+// One bet. Child state: a bet. side === null means sealed: the lock glyph
+// replaces the pick and the derived columns stay blank.
 export const WsBetRow = {
   display: 'grid',
-  gridTemplateColumns: '14em 11em 6em 4em 6em 8em',
+  gridTemplateColumns: '14em 9em 4em 6em 8em',
   alignItems: 'center',
   gap: 'Y',
   padding: 'Y 0',
@@ -31,34 +31,25 @@ export const WsBetRow = {
     }
   },
 
-  GuessCell: {
+  PickCell: {
     flow: 'x',
     align: 'center flex-start',
-    WsSealedCell: { display: (el, s) => (s.guess == null ? 'flex' : 'none') },
-    GuessValue: {
+    WsSealedCell: { display: (el, s) => (s.side == null ? 'flex' : 'none') },
+    PickValue: {
       tag: 'span',
       fontWeight: '800',
-      display: (el, s) => (s.guess == null ? 'none' : 'inline'),
-      text: (el, s) => {
-        if (s.guess == null) return ''
-        const v = Number(s.guess)
-        return v > 0 ? `+${v}` : String(v)
-      }
+      display: (el, s) => (s.side == null ? 'none' : 'inline'),
+      text: (el, s) => (s.side == null ? '' : `${s.root.wsChallenger || 'Challenger'} ${s.side}`)
     }
-  },
-
-  DistanceCell: {
-    tag: 'span',
-    textAlign: 'right',
-    text: (el, s) => (s.distance == null ? '—' : String(s.distance))
   },
 
   WonCell: {
     tag: 'span',
     textAlign: 'center',
     fontWeight: '800',
-    text: (el, s) => (s.won == null ? '—' : s.won ? '✓' : '·'),
-    color: (el, s) => (s.won ? 'mint' : 'neutral')
+    text: (el, s) => (s.refunded ? '↺' : s.won == null ? '—' : s.won ? '✓' : '·'),
+    color: (el, s) => (s.won ? 'mint' : s.refunded ? 'haze' : 'neutral'),
+    title: (el, s) => (s.refunded ? s.root.wsKindRefund || 'refund' : '')
   },
 
   PayoutCell: {

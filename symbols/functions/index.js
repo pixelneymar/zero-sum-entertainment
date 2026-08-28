@@ -4,7 +4,7 @@
 // to `__scope.engine*` (el.scope -> context.globalScope), which is the
 // supported way for call-invoked sections to reach shared code.
 //
-// These names are the state contract v2's function surface. Keep them.
+// These names are the state contract v3's function surface. Keep them.
 
 /** Root page onRender. Idempotent. */
 export const startEngine = function () {
@@ -20,18 +20,23 @@ export const selectGame = function (slug) {
   return engineSelectGame(slug)
 }
 
+/** SoundToggle → el.call('toggleSound'). Persists the preference. */
+export const toggleSound = function () {
+  return engineToggleSound()
+}
+
 export const backToPicker = function () {
   return engineBackToPicker()
 }
 
-/** BetPanel slider/chips → el.call('setGuess', n). Clamped to the game range. */
-export const setGuess = function (n) {
-  return engineSetGuess(n)
+/** ChallengerCard → el.call('setSide', 1 | 2). Anything else is ignored. */
+export const setSide = function (n) {
+  return engineSetSide(n)
 }
 
-/** BetPanel PLACE BET → el.call('submitBet', guess). Rejections land in state.error. */
-export const submitBet = function (guess) {
-  return engineSubmitBet(guess)
+/** BetPanel PLACE BET → el.call('submitBet', side). Rejections land in state.error. */
+export const submitBet = function (side) {
+  return engineSubmitBet(side)
 }
 
 /**

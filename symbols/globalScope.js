@@ -16,17 +16,19 @@
 //   - Functions call each other by bare name; frank rewrites references from
 //     functions/ and components to `__scope.X`.
 //
-// THE VIDEO IS THE GAME. Rounds are driven by the video timeline
-// (docs/rounds.md). Betting overlays the video. The outcome on screen is what
-// pays. Per round:
+// THE VIDEO IS THE GAME. One video is one duel: two challengers attempt the
+// same task in turn, and the crowd bets on WHICH ONE lands closer to the
+// target (docs/rounds.md). The video plays from its first frame and NEVER
+// pauses — betting runs over the hosts' stand-up intro, and the lock lands on
+// the frame where the first challenger starts. Per duel:
 //
-//   intro    video PLAYS from previous pause_at (or 0) to bet_open_at
-//   preview  5 s   video PAUSED at bet_open_at
-//   betting  25 s  video PAUSED at bet_open_at   crowd arrives, user bets once
-//   locked   5 s   video PLAYS from bet_open_at  playerCount/pot FROZEN
-//   reveal         video PLAYS until reveal_at   result not known yet
-//   results  8 s   video PAUSED at pause_at      result, settlement, credit
-//   ... next round's intro; after the last round -> 'ended'
+//   preview        (server only) video HELD at 0 until betting_opens_at
+//   betting        video PLAYS 0 → lock_at     crowd arrives, user picks 1 or 2
+//   locked   5 s   video PLAYS                 playerCount/pot FROZEN
+//   reveal         video PLAYS                 attempt 1 shows at reveal_at[0]
+//   results  8 s   video PLAYS to its end      attempt 2 at reveal_at[1] decides
+//                                              the winner; settlement, credit
+//   ended          summary
 //
 // Two backends, one engine. `demo` simulates the crowd and settles locally
 // with EXACTLY the formula in docs/game-rules.md §3–§4. `server` uses
@@ -54,10 +56,9 @@ export const RAKE = 0.05
 export const WINNER_FRACTION = 0.10
 export const START_BALANCE = 200
 
-// Timeline — docs/spec.md §3 / docs/rounds.md.
+// Timeline — docs/spec.md §3 / docs/rounds.md. The betting window has no
+// constant: it is the length of the footage before lock_at (17–20 s).
 export const TICK_MS = 250
-export const PREVIEW_MS = 5000
-export const BETTING_MS = 25000
 export const LOCKED_MS = 5000
 export const RESULTS_MS = 8000
 export const STATS_POLL_MS = 1500
@@ -67,7 +68,14 @@ export const ERROR_FLASH_MS = 4000
 // the engine re-derives: it seeks to the target mark and moves on.
 export const VIDEO_STALL_GRACE_MS = 4000
 
-export const PHASES = ['intro', 'preview', 'betting', 'locked', 'reveal', 'results', 'ended']
+export const PHASES = ['preview', 'betting', 'locked', 'reveal', 'results', 'ended']
+
+// The two sides of every duel. `side` is what a bet records; the name is what
+// the UI shows. Per-game lines and portraits are attached in gameChallengers().
+export const CHALLENGERS = [
+  { side: 1, name: 'Challenger 1' },
+  { side: 2, name: 'Challenger 2' }
+]
 
 // Video hosting. Primary is Supabase Storage (public bucket `videos`, honours
 // Range requests so seeking works). One line to change.
@@ -75,42 +83,77 @@ export const VIDEO_BASE = 'https://xgvuavikubqwsdhoadyw.supabase.co/storage/v1/o
 // Local fallback, tried once if the <video> element errors on the Storage URL.
 export const VIDEO_FALLBACK_BASE = '/assets/videos'
 
-// Demo game catalogue — mirrors the `games` rows (docs/rounds.md ranges).
+// Demo game catalogue — mirrors the `games` rows (docs/rounds.md).
 export const DEMO_GAMES = {
   banana_cut: {
     slug: 'banana_cut',
     title: 'Banana Cut',
-    objectiveLine: 'One cut, exactly in half. Bet on how many grams off the cut lands.',
-    guessMin: -20,
-    guessMax: 20,
-    guessStep: 1,
+    objectiveLine: 'One banana, one cut each.',
+    targetLine: 'Closest to an even split wins',
     resultUnit: 'g',
-    videoFile: 'banana'
+    videoFile: 'banana',
+    challengerLines: ['Green jacket · cuts first', 'Navy tee · cuts second']
   },
   water_200g: {
     slug: 'water_200g',
     title: 'Water Pour',
-    objectiveLine: 'One pour, exactly 200 g. Bet on how many grams off the pour lands.',
-    guessMin: -50,
-    guessMax: 50,
-    guessStep: 1,
+    objectiveLine: 'One pour each, 200 g target.',
+    targetLine: 'Closest to 200 g wins',
     resultUnit: 'g',
-    videoFile: 'water'
+    videoFile: 'water',
+    challengerLines: ['Green jacket · pours first', 'Navy tee · pours second']
   }
 }
 
-// Round scripts — ground truth from the footage (docs/rounds.md). Times are
-// video seconds. `result` was read off the scale display in the actual frame.
+// Duel scripts — ground truth from the footage (docs/rounds.md). Times are
+// video seconds. `offset` is how far each attempt landed from the target,
+// read off the scale display in the actual frame. Betting runs 0 → lockAt.
 export const ROUND_SCRIPTS = {
   banana_cut: [
-    { id: 'banana_01', betOpenAt: 20, revealAt: 36, pauseAt: 37, readings: ['82 g', '95 g'], result: -13 },
-    { id: 'banana_02', betOpenAt: 38, revealAt: 54, pauseAt: 55, readings: ['79 g', '94 g'], result: -15 }
+    {
+      id: 'banana_duel',
+      lockAt: 20,
+      revealAt: [36, 54],
+      endAt: 55.1,
+      attempts: [
+        { side: 1, offset: -13, readings: ['82 g', '95 g'] },
+        { side: 2, offset: -15, readings: ['79 g', '94 g'] }
+      ]
+    }
   ],
   water_200g: [
-    { id: 'water_01', betOpenAt: 17, revealAt: 30, pauseAt: 31, readings: ['161 g'], result: -39 },
-    { id: 'water_02', betOpenAt: 32, revealAt: 48, pauseAt: 49, readings: ['174 g'], result: -26 }
+    {
+      id: 'water_duel',
+      lockAt: 17,
+      revealAt: [30, 48],
+      endAt: 49.8,
+      attempts: [
+        { side: 1, offset: -39, readings: ['161 g'] },
+        { side: 2, offset: -26, readings: ['174 g'] }
+      ]
+    }
   ]
 }
+
+/** docs/game-rules.md §3 — the smaller absolute offset wins; equal is a tie (0). */
+export const duelWinner = (attempts) => {
+  const a = attempts[0]
+  const b = attempts[1]
+  if (!a || !b) return null
+  const da = Math.abs(a.offset)
+  const db = Math.abs(b.offset)
+  if (da === db) return 0
+  return da < db ? a.side : b.side
+}
+
+/** The state-contract challenger list for a game: names, lines, portraits. */
+export const gameChallengers = (g) =>
+  CHALLENGERS.map((c, i) => ({
+    side: c.side,
+    name: c.name,
+    line: (g.challengerLines && g.challengerLines[i]) || '',
+    poster: `/assets/posters/${g.videoFile}-c${c.side}.jpg`
+  }))
 
 // Fake crowd usernames — short, varied, no real brands.
 export const BOT_NAME_STEMS = [
@@ -134,7 +177,7 @@ export const engineData = {
   bootPromise: null,    // in-flight/settled bootstrap
   timer: null,          // setInterval id for the 250ms tick
   errorTimer: null,     // setTimeout id for a flashed state.error
-  history: [],          // [{ gameSlug, roundIndex, value, unit }] newest first
+  history: [],          // [{ gameSlug, roundIndex, winner, offsets, unit }] newest first
   sessionSeq: 0,        // bumps per selectGame
   sessionToken: '',     // time-stamped per selectGame so demo round ids stay unique across page loads (the store persists)
 
@@ -145,7 +188,6 @@ export const engineData = {
   pendingSeek: null,    // seconds to apply once metadata is loaded
   lastPlayAttemptAt: 0,
   playBlocked: null,    // last play() rejection message, if any
-  pauseTimer: null,     // precise pause at pause_at during results
 
   // demo backend
   demo: {
@@ -153,15 +195,17 @@ export const engineData = {
     scripts: [],
     roundIdx: -1,
     script: null,
-    phaseEndsAt: 0,     // wall-clock ms — timed phases (preview/betting/locked/results)
+    phaseEndsAt: 0,     // wall-clock ms — timed phases (locked/results)
     phaseStartedAt: 0,
     startCt: 0,         // video currentTime when the current video-driven phase began
     lastCt: -1,
     lastProgressAt: 0,
     bettingOpenedAt: 0,
-    plan: [],           // pending arrivals [{ name, guess, at }] sorted by `at`
-    book: null,         // { open, bets: [{ name, guess }] } — closed at LOCK
-    userBet: null       // { guess, stake }
+    windowMs: 0,        // length of the betting window (lockAt seconds, in ms)
+    lean: 0.5,          // this duel's crowd lean toward side 1
+    plan: [],           // pending arrivals [{ name, side, at }] sorted by `at`
+    book: null,         // { open, bets: [{ name, side }] } — closed at LOCK
+    userBet: null       // { side, stake }
   },
 
   // server backend
@@ -201,7 +245,110 @@ export const engineData = {
 
 export const updateState = (patch) => {
   const s = engineData.rootState
-  if (s && typeof s.update === 'function') s.update(patch)
+  if (!s || typeof s.update !== 'function') return
+  audioOnPatch(s, patch)
+  s.update(patch)
+}
+
+// ---------------------------------------------------------------------------
+// Sound cues — Web Audio, synthesised, no assets. Short (<= 0.5 s) feedback
+// for lock, bet placed, win, loss and dead heat. Unlocked by the first user
+// gesture (selectGame) and muted by the SoundToggle; the preference persists
+// in localStorage under zse_sound. Never decides anything: it only listens to
+// the state patches the engine already writes.
+// ---------------------------------------------------------------------------
+
+export const AUDIO_STORAGE_KEY = 'zse_sound'
+
+export const audioData = { ctx: null }
+
+export const audioPrefRead = () => {
+  try {
+    return localStorage.getItem(AUDIO_STORAGE_KEY) !== '0'
+  } catch {
+    return true
+  }
+}
+
+export const audioPrefWrite = (on) => {
+  try {
+    localStorage.setItem(AUDIO_STORAGE_KEY, on ? '1' : '0')
+  } catch {}
+}
+
+/** Creates or resumes the AudioContext. Call from a user gesture. */
+export const audioUnlock = () => {
+  try {
+    const Ctx = globalThis.AudioContext || globalThis.webkitAudioContext
+    if (!Ctx) return null
+    if (!audioData.ctx) audioData.ctx = new Ctx()
+    if (audioData.ctx.state === 'suspended') audioData.ctx.resume()
+    return audioData.ctx
+  } catch {
+    return null
+  }
+}
+
+/** One note: frequency, start offset, duration (s), wave, peak gain. */
+export const audioNote = (ctx, freq, at, dur, type, peak) => {
+  const osc = ctx.createOscillator()
+  const gain = ctx.createGain()
+  osc.type = type
+  osc.frequency.setValueAtTime(freq, ctx.currentTime + at)
+  gain.gain.setValueAtTime(0.0001, ctx.currentTime + at)
+  gain.gain.exponentialRampToValueAtTime(peak, ctx.currentTime + at + 0.01)
+  gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + at + dur)
+  osc.connect(gain)
+  gain.connect(ctx.destination)
+  osc.start(ctx.currentTime + at)
+  osc.stop(ctx.currentTime + at + dur + 0.02)
+}
+
+export const AUDIO_CUES = {
+  // tick: a bet is in
+  bet: [[880, 0, 0.06, 'sine', 0.12]],
+  // thud + click: the lock frame
+  lock: [[110, 0, 0.16, 'triangle', 0.18], [1760, 0, 0.03, 'square', 0.05]],
+  // rising major arpeggio: you won
+  win: [[523.25, 0, 0.1, 'triangle', 0.14], [659.25, 0.1, 0.1, 'triangle', 0.14], [783.99, 0.2, 0.22, 'triangle', 0.16]],
+  // falling minor third: not this time
+  loss: [[329.63, 0, 0.16, 'sine', 0.12], [246.94, 0.16, 0.28, 'sine', 0.1]],
+  // one flat tone: dead heat / no bet
+  neutral: [[440, 0, 0.14, 'sine', 0.1]]
+}
+
+export const audioCue = (name) => {
+  const s = engineData.rootState
+  if (s && s.sound === false) return
+  const ctx = audioData.ctx
+  const notes = AUDIO_CUES[name]
+  if (!ctx || !notes || ctx.state !== 'running') return
+  try {
+    notes.forEach((n) => audioNote(ctx, n[0], n[1], n[2], n[3], n[4]))
+  } catch {}
+}
+
+/** Reads a state patch before it is applied and plays the matching cue. */
+export const audioOnPatch = (s, patch) => {
+  if (!patch) return
+  if (patch.phase === 'locked' && s.phase !== 'locked') audioCue('lock')
+  if (patch.myBet && !s.myBet) audioCue('bet')
+  if (patch.settlement && patch.settlement !== s.settlement) {
+    const bet = patch.myBet !== undefined ? patch.myBet : s.myBet
+    if (patch.settlement.voided || !bet) audioCue('neutral')
+    else audioCue(patch.settlement.iWon ? 'win' : 'loss')
+  }
+}
+
+export const engineToggleSound = () => {
+  const s = engineData.rootState
+  const next = !(s && s.sound !== false)
+  audioPrefWrite(next)
+  updateState({ sound: next })
+  if (next) {
+    audioUnlock()
+    audioCue('bet')
+  }
 }
 
 export const describeError = (err) => {
@@ -230,13 +377,10 @@ export const withTimeout = (promise, ms, label) =>
 
 export const rint = (lo, hi) => lo + Math.floor(Math.random() * (hi - lo + 1))
 
-export const clampGuess = (game, n) => {
-  if (!game) return n
-  const step = game.guessStep || 1
-  let v = Math.round(Number(n) / step) * step
-  if (v < game.guessMin) v = game.guessMin
-  if (v > game.guessMax) v = game.guessMax
-  return v
+/** 1 or 2, or null for anything else. A bet is a side and nothing more. */
+export const normalizeSide = (n) => {
+  const v = Number(n)
+  return v === 1 || v === 2 ? v : null
 }
 
 export const videoSrcFor = (file, fallback) =>
@@ -338,12 +482,11 @@ export const videoSeek = (t) => {
   }
 }
 
-/** Paused at exactly `t` — the frame the phase is staged on. */
+/**
+ * Paused at exactly `t`. The only frame ever held is 0 — the first frame,
+ * before a duel starts. Once the footage runs, nothing stops it.
+ */
 export const videoHoldAt = (t) => {
-  if (engineData.pauseTimer) {
-    clearTimeout(engineData.pauseTimer)
-    engineData.pauseTimer = null
-  }
   videoPause()
   videoSeek(t)
 }
@@ -351,6 +494,19 @@ export const videoHoldAt = (t) => {
 export const videoCurrentTime = () => {
   const node = engineData.videoNode
   return node ? node.currentTime || 0 : 0
+}
+
+/**
+ * Whole seconds of footage left before `target`. The betting countdown reads
+ * the VIDEO, not the wall clock: bets close on a frame, so the number on
+ * screen must be the distance to that frame. Wall clock stands in only when
+ * there is no element at all.
+ */
+export const videoSecondsUntil = (target, now) => {
+  const d = engineData.demo
+  const node = engineData.videoNode
+  const ct = node ? node.currentTime || 0 : d.startCt + Math.max(0, now - d.phaseStartedAt) / 1000
+  return Math.max(0, Math.ceil(target - ct))
 }
 
 /** Mirror the element into state.video (only when something changed). */
@@ -423,8 +579,12 @@ export const engineStart = (el) => {
   if (engineData.timer) return
   engineData.rootState =
     el && typeof el.getRootState === 'function' ? el.getRootState() : el ? el.state : null
-  if (typeof globalThis !== 'undefined') globalThis.__zse = engineData
+  if (typeof globalThis !== 'undefined') {
+    globalThis.__zse = engineData
+    globalThis.__zseAudio = audioData
+  }
 
+  updateState({ sound: audioPrefRead() })
   engineBoot()
   engineData.timer = setInterval(() => {
     engineTick()
@@ -475,6 +635,7 @@ export const engineBoot = () => {
 // ---------------------------------------------------------------------------
 
 export const engineSelectGame = async (slug) => {
+  audioUnlock()
   updateState({ error: null })
   const mode = await engineBoot()
   if (mode === 'server') {
@@ -493,10 +654,6 @@ export const engineSelectGame = async (slug) => {
 
 export const engineBackToPicker = () => {
   unsubscribeAll()
-  if (engineData.pauseTimer) {
-    clearTimeout(engineData.pauseTimer)
-    engineData.pauseTimer = null
-  }
   videoPause()
   storeAbandonCurrent(Date.now())
   const d = engineData.demo
@@ -511,13 +668,13 @@ export const engineBackToPicker = () => {
     screen: 'picker',
     game: null,
     round: null,
-    phase: 'intro',
+    phase: 'preview',
     secondsLeft: 0,
     playerCount: 0,
     pot: 0,
     frozen: null,
     arrivals: [],
-    myGuess: null,
+    mySide: null,
     myBet: null,
     result: null,
     settlement: null,
@@ -525,47 +682,43 @@ export const engineBackToPicker = () => {
   })
 }
 
-export const engineSetGuess = (n) => {
+export const engineSetSide = (n) => {
   const s = engineData.rootState
   if (!s || !s.game) return
-  const v = Number(n)
-  if (!isFinite(v)) return
-  updateState({ myGuess: clampGuess(s.game, v) })
+  const side = normalizeSide(n)
+  if (side == null) return
+  updateState({ mySide: side })
 }
 
 /**
- * One bet per user per round, only while 'betting'. In demo mode the local
+ * One bet per user per duel, only while 'betting'. In demo mode the local
  * book is the judge; in server mode `place_bet` is, and its rejection is
  * surfaced verbatim. Either way a refusal is VISIBLE in state.error.
  */
-export const engineSubmitBet = async (guessIn) => {
+export const engineSubmitBet = async (sideIn) => {
   const s = engineData.rootState
   if (!s || !s.round || !s.game) {
-    flashError('There is no active round to bet on.')
+    flashError('There is no active duel to bet on.')
     return
   }
-  const guess = Number(guessIn != null ? guessIn : s.myGuess)
-  if (!isFinite(guess)) {
-    flashError('Pick a guess first.')
+  const side = normalizeSide(sideIn != null ? sideIn : s.mySide)
+  if (side == null) {
+    flashError('Pick a challenger first.')
     return
   }
   if (s.phase !== 'betting') {
-    flashError(s.phase === 'preview' ? 'Bets are not open yet.' : 'Betting is closed for this round.')
+    flashError(s.phase === 'preview' ? 'Bets are not open yet.' : 'Betting is closed for this duel.')
     return
   }
   if (s.myBet) {
-    flashError('You already placed a bet this round.')
-    return
-  }
-  if (guess < s.game.guessMin || guess > s.game.guessMax) {
-    flashError(`Guess must be between ${s.game.guessMin} and ${s.game.guessMax}.`)
+    flashError('You already placed a bet on this duel.')
     return
   }
   if (engineData.mode === 'server') {
-    await serverSubmitBet(guess)
+    await serverSubmitBet(side)
     return
   }
-  demoSubmitBet(guess)
+  demoSubmitBet(side)
 }
 
 // ---------------------------------------------------------------------------
@@ -612,11 +765,10 @@ export const demoSelectGame = (slug) => {
     slug: g.slug,
     title: g.title,
     objectiveLine: g.objectiveLine,
-    guessMin: g.guessMin,
-    guessMax: g.guessMax,
-    guessStep: g.guessStep,
+    targetLine: g.targetLine,
     resultUnit: g.resultUnit,
-    videoSrc: videoSrcFor(g.videoFile, false)
+    videoSrc: videoSrcFor(g.videoFile, false),
+    challengers: gameChallengers(g)
   }
   engineData.videoSrcWanted = game.videoSrc
   const d = engineData.demo
@@ -631,11 +783,16 @@ export const demoSelectGame = (slug) => {
     error: null
   })
   videoEnsureSrc()
-  // A fresh game starts its cold open from the top of the footage.
+  // Every duel starts from the first frame of its footage.
   videoHoldAt(0)
   demoLoadRound(0, Date.now())
 }
 
+/**
+ * Opens a duel: the book opens, the crowd plan is drawn, and the footage
+ * starts from 0. Betting is live from the first frame — the hosts' intro IS
+ * the betting window — and closes on the frame at script.lockAt.
+ */
 export const demoLoadRound = (i, now) => {
   const s = engineData.rootState
   const d = engineData.demo
@@ -643,35 +800,38 @@ export const demoLoadRound = (i, now) => {
   if (!s || !s.game || !script) return
   d.roundIdx = i
   d.script = script
-  d.plan = []
-  d.book = null
   d.userBet = null
   d.phaseEndsAt = 0
+  d.windowMs = Math.round(script.lockAt * 1000)
+  d.bettingOpenedAt = now
+  d.lean = 0.3 + Math.random() * 0.4
+  d.plan = demoPlanCrowd(d.windowMs, d.lean)
+  d.book = { open: true, bets: [] }
   const round = {
     id: `demo:${s.game.slug}:${script.id}:${engineData.sessionToken}`,
     index: i + 1,
     count: d.scripts.length,
-    betOpenAt: script.betOpenAt,
-    revealAt: script.revealAt,
-    pauseAt: script.pauseAt
+    lockAt: script.lockAt,
+    revealAt: script.revealAt.slice(),
+    endAt: script.endAt
   }
   updateState({
     round,
-    phase: 'intro',
-    secondsLeft: 0,
+    phase: 'betting',
+    secondsLeft: Math.ceil(script.lockAt),
     playerCount: 0,
     pot: 0,
     frozen: null,
     arrivals: [],
-    myGuess: null,
+    mySide: null,
     myBet: null,
     result: null,
     settlement: null
   })
   storeRoundOpen(s.game, round, now)
-  // Cold open: play from wherever the footage is (previous pause_at, or 0).
-  const prev = i > 0 ? d.scripts[i - 1].pauseAt : 0
-  beginVideoPhase(now, prev)
+  storeRoundPhase('betting', now)
+  beginVideoPhase(now, 0)
+  videoSeek(0)
   videoPlay()
 }
 
@@ -691,36 +851,17 @@ export const demoTick = (now) => {
   const phase = s.phase
   const patch = {}
 
-  if (phase === 'intro') {
+  if (phase === 'betting') {
     videoPlay()
-    if (videoReached(script.betOpenAt, now)) {
-      videoHoldAt(script.betOpenAt)
-      demoEnterTimed('preview', PREVIEW_MS, now)
-    }
-    return
-  }
-
-  if (phase === 'preview') {
-    videoHoldAt(script.betOpenAt)
-    if (now >= d.phaseEndsAt) {
-      demoOpenBetting(now)
-      return
-    }
-    patch.secondsLeft = secondsLeftUntil(d.phaseEndsAt, now)
-  } else if (phase === 'betting') {
-    videoHoldAt(script.betOpenAt)
     demoReleaseArrivals(now)
-    if (now >= d.phaseEndsAt) {
+    if (videoReached(script.lockAt, now)) {
       demoLock(now)
       return
     }
-    patch.secondsLeft = secondsLeftUntil(d.phaseEndsAt, now)
+    patch.secondsLeft = videoSecondsUntil(script.lockAt, now)
   } else if (phase === 'locked') {
     videoPlay()
-    if (videoReached(script.revealAt, now)) {
-      demoReveal(now)
-      return
-    }
+    if (demoCheckReveals(now)) return
     if (now >= d.phaseEndsAt) {
       updateState({ phase: 'reveal', secondsLeft: 0 })
       return
@@ -728,54 +869,54 @@ export const demoTick = (now) => {
     patch.secondsLeft = secondsLeftUntil(d.phaseEndsAt, now)
   } else if (phase === 'reveal') {
     videoPlay()
-    if (videoReached(script.revealAt, now)) {
-      demoReveal(now)
-      return
-    }
+    if (demoCheckReveals(now)) return
   } else if (phase === 'results') {
-    const node = engineData.videoNode
-    if (node && !node.paused && (node.currentTime || 0) >= script.pauseAt - 0.05) {
-      videoHoldAt(script.pauseAt)
-    }
+    // The footage runs to its own last frame; nothing holds it.
     if (now >= d.phaseEndsAt) {
       demoNextRound(now)
       return
     }
     patch.secondsLeft = secondsLeftUntil(d.phaseEndsAt, now)
   } else {
-    return // 'ended'
+    return // 'preview' (never in demo) or 'ended'
   }
 
   if (patch.secondsLeft !== undefined && patch.secondsLeft === s.secondsLeft) delete patch.secondsLeft
   if (Object.keys(patch).length) updateState(patch)
 }
 
-export const demoOpenBetting = (now) => {
+/**
+ * Has the footage reached the next unrevealed attempt? Reveals it and
+ * returns true if so. The second reveal decides the duel and settles.
+ */
+export const demoCheckReveals = (now) => {
   const s = engineData.rootState
   const d = engineData.demo
-  d.bettingOpenedAt = now
-  d.plan = demoPlanCrowd(s.game)
-  d.book = { open: true, bets: [] }
-  storeRoundPhase('betting', now)
-  demoEnterTimed('betting', BETTING_MS, now)
+  const script = d.script
+  const shown = s.result && s.result.attempts ? s.result.attempts : []
+  const next = shown[0] ? 1 : 0
+  if (next >= script.attempts.length) return false
+  if (!videoReached(script.revealAt[next], now)) return false
+  demoRevealAttempt(next, now)
+  return true
 }
 
 /**
  * Admit every planned arrival whose offset has elapsed. Structural guard:
  * runs only while the book is open AND the phase is 'betting', and the clock
- * it reads is capped at BETTING_MS, so a throttled tab can never admit an
- * arrival stamped after the window.
+ * it reads is capped at the window length, so a throttled tab can never
+ * admit an arrival stamped after the window.
  */
 export const demoReleaseArrivals = (now) => {
   const s = engineData.rootState
   const d = engineData.demo
   if (!s || !d.book || !d.book.open || s.phase !== 'betting') return
-  const elapsed = Math.min(now - d.bettingOpenedAt, BETTING_MS)
+  const elapsed = Math.min(now - d.bettingOpenedAt, d.windowMs)
   let admitted = 0
   while (d.plan.length && d.plan[0].at <= elapsed) {
     const arrival = d.plan.shift()
     d.book.bets.push(arrival)
-    storeBet(botPlayerId(arrival.name), arrival.name, true, arrival.guess, now)
+    storeBet(botPlayerId(arrival.name), arrival.name, true, arrival.side, now)
     admitted += 1
   }
   if (!admitted) return
@@ -798,21 +939,19 @@ export const demoLock = (now) => {
   const frozen = { playerCount: s.playerCount, pot: s.pot }
   storeRoundLock(frozen, now)
   demoEnterTimed('locked', LOCKED_MS, now, { frozen })
-  beginVideoPhase(now, d.script.betOpenAt)
-  const ct = videoCurrentTime()
-  if (Math.abs(ct - d.script.betOpenAt) > 0.5) videoSeek(d.script.betOpenAt)
+  // The footage does not stop or jump at the lock — it is already playing.
   videoPlay()
 }
 
-export const demoSubmitBet = (guess) => {
+export const demoSubmitBet = (side) => {
   const s = engineData.rootState
   const d = engineData.demo
   if (!d.book || !d.book.open || s.phase !== 'betting') {
-    flashError('Betting is closed for this round.')
+    flashError('Betting is closed for this duel.')
     return
   }
   if (d.userBet) {
-    flashError('You already placed a bet this round.')
+    flashError('You already placed a bet on this duel.')
     return
   }
   if (d.balance < STAKE) {
@@ -820,13 +959,13 @@ export const demoSubmitBet = (guess) => {
     return
   }
   d.balance -= STAKE
-  d.userBet = { guess, stake: STAKE }
-  const human = storeBet(demoPlayerId(), DEMO_PLAYER_NAME, false, guess, Date.now())
+  d.userBet = { side, stake: STAKE }
+  const human = storeBet(demoPlayerId(), DEMO_PLAYER_NAME, false, side, Date.now())
   if (human) d.balance = human.balance
   const playerCount = d.book.bets.length + 1
   updateState({
-    myBet: { guess, stake: STAKE },
-    myGuess: guess,
+    myBet: { side, stake: STAKE },
+    mySide: side,
     balance: d.balance,
     playerCount,
     pot: playerCount * STAKE,
@@ -834,24 +973,40 @@ export const demoSubmitBet = (guess) => {
   })
 }
 
-/** The footage reached reveal_at: the result is now known. Settle, credit. */
-export const demoReveal = (now) => {
+/**
+ * The footage reached attempt `i`'s scale reading. The first reveal only
+ * shows the number; the second decides the duel — settle, credit, results.
+ */
+export const demoRevealAttempt = (i, now) => {
   const s = engineData.rootState
   const d = engineData.demo
   const script = d.script
-  const result = { value: script.result, unit: s.game.resultUnit, readings: script.readings.slice() }
-  const settlement = demoSettle(d.book ? d.book.bets : [], d.userBet, script.result)
+  const attempt = script.attempts[i]
+  const prev = s.result && s.result.attempts ? s.result.attempts : []
+  const attempts = script.attempts.map((a, k) => (k < i ? prev[k] || null : null))
+  attempts[i] = { side: attempt.side, offset: attempt.offset, readings: attempt.readings.slice() }
+  const unit = s.game.resultUnit
+
+  if (i < script.attempts.length - 1) {
+    updateState({ result: { unit, attempts, winner: null } })
+    return
+  }
+
+  const winner = duelWinner(script.attempts)
+  const result = { unit, attempts, winner }
+  const settlement = demoSettle(d.book ? d.book.bets : [], d.userBet, winner)
   if (settlement.conserved === false) {
     flashError('Settlement failed conservation — chips would be created or destroyed.')
   }
-  d.balance += settlement.myPayout
-  const human = storeRoundSettle(script, settlement, now)
+  d.balance += settlement.voided && d.userBet ? d.userBet.stake : settlement.myPayout
+  const human = storeRoundSettle(script, winner, settlement, now)
   if (human) d.balance = human.balance
   engineData.history.unshift({
     gameSlug: s.game.slug,
     roundIndex: s.round.index,
-    value: result.value,
-    unit: result.unit
+    winner,
+    offsets: attempts.map((a) => a.offset),
+    unit
   })
   engineData.history = engineData.history.slice(0, 8)
   demoEnterTimed('results', RESULTS_MS, now, {
@@ -860,16 +1015,6 @@ export const demoReveal = (now) => {
     balance: d.balance,
     history: engineData.history.slice()
   })
-  // Keep playing to pause_at, then hold that frame. The tick also checks.
-  const node = engineData.videoNode
-  if (engineData.pauseTimer) clearTimeout(engineData.pauseTimer)
-  if (node) {
-    const ms = Math.max(0, (script.pauseAt - (node.currentTime || 0)) * 1000)
-    engineData.pauseTimer = setTimeout(() => {
-      engineData.pauseTimer = null
-      videoHoldAt(script.pauseAt)
-    }, ms)
-  }
 }
 
 export const demoNextRound = (now) => {
@@ -879,50 +1024,39 @@ export const demoNextRound = (now) => {
     demoLoadRound(next, now)
     return
   }
-  videoHoldAt(d.script.pauseAt)
   updateState({ phase: 'ended', secondsLeft: 0 })
 }
 
 // ---- crowd simulation (docs/spec.md §8.5, archive/spec-v0.1.md §6) --------
 
 /**
- * Arrival CDF over the 25 s window: ~30% front-loaded in the first 6 s, a
- * steady trickle, then ~40% in the last 8 s (the late rush).
+ * Arrival CDF over the betting window, as a fraction 0..1 of its length:
+ * ~30% front-loaded in the first quarter, a steady trickle, then ~40% in the
+ * last third (the late rush). Same shape as v0.1's 25 s curve, stretched to
+ * whatever the footage gives us.
  */
-export const arrivalCdf = (tSec) => {
-  const t = Math.max(0, Math.min(25, tSec))
-  if (t <= 6) return 0.30 * Math.pow(t / 6, 0.7)
-  if (t <= 17) return 0.30 + 0.30 * ((t - 6) / 11)
-  return 0.60 + 0.40 * Math.pow((t - 17) / 8, 1.3)
+export const arrivalCdf = (f) => {
+  const t = Math.max(0, Math.min(1, f))
+  if (t <= 0.24) return 0.30 * Math.pow(t / 0.24, 0.7)
+  if (t <= 0.68) return 0.30 + 0.30 * ((t - 0.24) / 0.44)
+  return 0.60 + 0.40 * Math.pow((t - 0.68) / 0.32, 1.3)
 }
 
-/** Inverse-CDF sample, in ms, strictly inside the betting window. */
-export const demoArrivalOffset = () => {
+/** Inverse-CDF sample, in ms, strictly inside a window of `windowMs`. */
+export const demoArrivalOffset = (windowMs) => {
   const u = Math.random()
   let lo = 0
-  let hi = 25
+  let hi = 1
   for (let i = 0; i < 30; i++) {
     const mid = (lo + hi) / 2
     if (arrivalCdf(mid) < u) lo = mid
     else hi = mid
   }
-  return Math.min(Math.round(hi * 1000), BETTING_MS - 250)
+  return Math.min(Math.round(hi * windowMs), windowMs - 250)
 }
 
-export const gaussian = () => {
-  let u = 0
-  let v = 0
-  while (u === 0) u = Math.random()
-  while (v === 0) v = Math.random()
-  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v)
-}
-
-/** Normal-ish around 0, stddev = range/5 (8 for ±20), clamped, a few outliers. */
-export const demoGuess = (game) => {
-  if (Math.random() < 0.06) return clampGuess(game, rint(game.guessMin, game.guessMax))
-  const sd = (game.guessMax - game.guessMin) / 5
-  return clampGuess(game, gaussian() * sd)
-}
+/** Each bot backs side 1 with probability `lean` — the crowd herds a little. */
+export const demoSide = (lean) => (Math.random() < lean ? 1 : 2)
 
 export const demoNames = (count) => {
   const used = {}
@@ -940,13 +1074,13 @@ export const demoNames = (count) => {
   return out
 }
 
-/** 35–80 players, each with a name, a hidden guess and an arrival offset. */
-export const demoPlanCrowd = (game) => {
+/** 35–80 players, each with a name, a hidden side and an arrival offset. */
+export const demoPlanCrowd = (windowMs, lean) => {
   const total = rint(35, 80)
   const names = demoNames(total)
   const plan = []
   for (let i = 0; i < total; i++) {
-    plan.push({ name: names[i], guess: demoGuess(game), at: demoArrivalOffset() })
+    plan.push({ name: names[i], side: demoSide(lean), at: demoArrivalOffset(windowMs) })
   }
   plan.sort((a, b) => a.at - b.at)
   return plan
@@ -954,39 +1088,46 @@ export const demoPlanCrowd = (game) => {
 
 // ---- settlement (docs/game-rules.md §3–§4; matches tests/payout.test.mjs) --
 
-export const demoSettle = (botBets, userBet, resultValue) => {
-  const all = botBets.map((b) => ({ guess: b.guess, mine: false, name: b.name }))
-  if (userBet) all.push({ guess: userBet.guess, mine: true, name: null })
+/**
+ * Duel settlement. `winner` is 1, 2, or 0 for a dead heat. Winners are every
+ * bet on the winning side; they split the prize equally. A duel with no
+ * winning bet — a dead heat, or nobody backed the winner — has no market and
+ * refunds every stake (§3.2). The payout maths is the shared §4 engine.
+ */
+export const demoSettle = (botBets, userBet, winner) => {
+  const all = botBets.map((b) => ({ side: b.side, mine: false, name: b.name }))
+  if (userBet) all.push({ side: userBet.side, mine: true, name: null })
   const players = all.length
 
-  // Distribution is drawn after reveal — every guess, including the user's.
-  const counts = {}
-  for (const b of all) counts[b.guess] = (counts[b.guess] || 0) + 1
-  const distribution = Object.keys(counts)
-    .map((k) => ({ guess: Number(k), count: counts[k] }))
-    .sort((a, b) => a.guess - b.guess)
+  // The split is drawn after reveal — every pick, including the user's.
+  const counts = { 1: 0, 2: 0 }
+  for (const b of all) counts[b.side] = (counts[b.side] || 0) + 1
+  const sides = [{ side: 1, count: counts[1] }, { side: 2, count: counts[2] }]
 
   if (players === 0) {
     return {
       winnerCount: 0, multiplier: null, payout: 0, iWon: false, myPayout: 0,
-      distribution, playerCount: 0, pot: 0, prize: 0, dust: 0, houseTake: 0,
-      targetWinners: 0, conserved: true, entries: []
+      sides, winner, playerCount: 0, pot: 0, prize: 0, dust: 0, houseTake: 0,
+      voided: false, conserved: true, entries: []
     }
   }
 
-  // §3 — nearest, RANK (ties at the cut-off are all in).
-  const N = Math.max(1, Math.ceil(players * WINNER_FRACTION))
-  const dist = all.map((b) => Math.abs(b.guess - resultValue))
-  const winners = []
-  for (let i = 0; i < players; i++) {
-    let rank = 1
-    for (let j = 0; j < players; j++) if (dist[j] < dist[i]) rank += 1
-    if (rank <= N) winners.push(all[i])
-  }
+  // §3 — the winning side. Every bet on it wins; nothing else does.
+  const winners = winner === 1 || winner === 2 ? all.filter((b) => b.side === winner) : []
   const winnerCount = winners.length
+  const pot = players * STAKE
+
+  // §3.2 — no market. Every stake goes back; the house takes nothing.
+  if (winnerCount === 0) {
+    return {
+      winnerCount: 0, multiplier: null, payout: 0, iWon: false, myPayout: 0,
+      sides, winner, playerCount: players, pot, prize: 0, dust: 0, houseTake: 0,
+      voided: true, conserved: true,
+      entries: all.map((b) => ({ name: b.name, mine: b.mine, side: b.side, won: false, refunded: true }))
+    }
+  }
 
   // §4 / §4.1 — integer chips, floor, dust to the house, post-floor multiplier.
-  const pot = players * STAKE
   const prize = Math.trunc(pot * (1 - RAKE))
   const payout = Math.floor(prize / winnerCount)
   const dust = prize - payout * winnerCount
@@ -1001,16 +1142,17 @@ export const demoSettle = (botBets, userBet, resultValue) => {
     payout,
     iWon,
     myPayout: iWon ? payout : 0,
-    distribution,
+    sides,
+    winner,
     playerCount: players,
     pot,
     prize,
     dust,
     houseTake,
-    targetWinners: N,
+    voided: false,
     conserved,
     // Per-bet outcome, in input order — consumed by the demo store only.
-    entries: all.map((b) => ({ name: b.name, mine: b.mine, guess: b.guess, won: winners.indexOf(b) >= 0 }))
+    entries: all.map((b) => ({ name: b.name, mine: b.mine, side: b.side, won: winners.indexOf(b) >= 0, refunded: false }))
   }
 }
 
@@ -1138,29 +1280,35 @@ export const phaseSecondsLeft = (round, now) => {
 
 export const mapGame = (row) => {
   if (!row) return null
-  const file = row.slug === 'water_200g' ? 'water' : 'banana'
+  const local = DEMO_GAMES[row.slug] || DEMO_GAMES.banana_cut
   return {
     slug: row.slug,
     title: row.title,
     objectiveLine: row.objective_line,
-    guessMin: row.guess_min,
-    guessMax: row.guess_max,
-    guessStep: row.guess_step,
+    targetLine: local.targetLine,
     resultUnit: row.result_unit,
-    videoSrc: videoSrcFor(file, false)
+    videoSrc: videoSrcFor(local.videoFile, false),
+    challengers: gameChallengers(local)
   }
 }
 
-/** Contract shape + the server timestamps phaseOf() needs. */
+/**
+ * Contract shape + the server timestamps phaseOf() needs. `video_bet_open_s`
+ * is the LOCK frame in the duel schema: betting runs from video 0 (at
+ * betting_opens_at) to that frame (at betting_closes_at).
+ */
 export const mapRound = (row) => {
   if (!row) return null
+  const lockAt = Number(row.video_bet_open_s)
+  const reveal2 = Number(row.video_reveal_s)
+  const reveal1 = row.video_reveal_1_s == null ? reveal2 : Number(row.video_reveal_1_s)
   return {
     id: row.id,
     index: row.round_index,
     count: null,
-    betOpenAt: Number(row.video_bet_open_s),
-    revealAt: Number(row.video_reveal_s),
-    pauseAt: Number(row.video_pause_s),
+    lockAt,
+    revealAt: [reveal1, reveal2],
+    endAt: Number(row.video_pause_s),
     bettingOpensAt: row.betting_opens_at,
     bettingClosesAt: row.betting_closes_at,
     resultVisibleAt: row.result_visible_at,
@@ -1173,11 +1321,11 @@ export const apiListGames = async () => {
   const supabase = await getSupabase()
   const { data, error } = await supabase
     .from('games')
-    .select('slug, title, objective_line, guess_min, guess_max, guess_step, result_unit, is_active')
+    .select('slug, title, objective_line, result_unit, is_active')
     .eq('is_active', true)
     .order('title', { ascending: true })
   if (error) throw error
-  return (data || []).map(mapGame)
+  return (data || []).map((x) => mapGame(x))
 }
 
 export const apiGetGame = async (slug) => {
@@ -1185,7 +1333,7 @@ export const apiGetGame = async (slug) => {
   const supabase = await getSupabase()
   const { data, error } = await supabase
     .from('games')
-    .select('slug, title, objective_line, guess_min, guess_max, guess_step, result_unit, is_active')
+    .select('slug, title, objective_line, result_unit, is_active')
     .eq('slug', slug)
     .eq('is_active', true)
     .maybeSingle()
@@ -1207,7 +1355,7 @@ export const apiCurrentRound = async (slug) => {
   const nowIso = new Date(serverNow()).toISOString()
   const { data, error } = await supabase
     .from('rounds')
-    .select('id, round_index, betting_opens_at, betting_closes_at, result_visible_at, results_end_at, video_bet_open_s, video_reveal_s, video_pause_s')
+    .select('id, round_index, betting_opens_at, betting_closes_at, result_visible_at, results_end_at, video_bet_open_s, video_reveal_1_s, video_reveal_s, video_pause_s')
     .eq('game_id', gameRow.id)
     .gt('results_end_at', nowIso)
     .order('betting_opens_at', { ascending: true })
@@ -1217,13 +1365,16 @@ export const apiCurrentRound = async (slug) => {
   return mapRound(data)
 }
 
-/** Places a bet via the `place_bet` RPC — never a direct insert. */
-export const apiPlaceBet = async (roundId, guess) => {
+/**
+ * Places a bet via the `place_bet` RPC — never a direct insert. The side
+ * travels in `bets.guess` (1 or 2); the schema's range check is the guard.
+ */
+export const apiPlaceBet = async (roundId, side) => {
   await authReady()
   const supabase = await getSupabase()
   const { data, error } = await supabase.rpc('place_bet', {
     p_round_id: roundId,
-    p_guess: guess
+    p_guess: side
   })
   if (error) throw error
   return data
@@ -1239,7 +1390,28 @@ export const apiMyBet = async (roundId) => {
     .maybeSingle()
   if (error) throw error
   if (!data) return null
-  return { guess: data.guess, stake: data.stake }
+  return { side: data.guess, stake: data.stake }
+}
+
+/**
+ * Each attempt's reading, from `round_attempts`. RLS gates every row on its
+ * own `visible_at`, so the first challenger's number arrives mid-duel and the
+ * second's at result_visible_at. Missing rows stay null — never guessed at.
+ */
+export const apiRoundAttempts = async (roundId) => {
+  await authReady()
+  const supabase = await getSupabase()
+  const { data, error } = await supabase
+    .from('round_attempts')
+    .select('side, offset_value, readings')
+    .eq('round_id', roundId)
+  if (error) throw error
+  const out = [null, null]
+  for (const row of data || []) {
+    const side = normalizeSide(row.side)
+    if (side) out[side - 1] = { side, offset: Number(row.offset_value), readings: row.readings || [] }
+  }
+  return out
 }
 
 /** Public aggregate: player count and pot. Never carries a single guess. */
@@ -1269,7 +1441,8 @@ export const apiRoundResult = async (roundId) => {
     .maybeSingle()
   if (error) throw error
   if (!data) return null
-  return { value: data.result_value, recordedAt: data.recorded_at }
+  // result_value is the winning side for a duel: 1, 2, or 0 for a dead heat.
+  return { winner: Number(data.result_value), recordedAt: data.recorded_at }
 }
 
 export const apiSettlement = async (roundId) => {
@@ -1283,22 +1456,27 @@ export const apiSettlement = async (roundId) => {
   if (roundError) throw roundError
   if (!roundRow || !roundRow.settled_at) return null
 
-  const { data: ledgerRow, error: ledgerError } = await supabase
+  const { data: ledgerRows, error: ledgerError } = await supabase
     .from('chip_ledger')
-    .select('amount')
+    .select('kind, amount')
     .eq('round_id', roundId)
-    .eq('kind', 'payout')
-    .maybeSingle()
+    .in('kind', ['payout', 'refund'])
   if (ledgerError) throw ledgerError
 
-  const myPayout = ledgerRow ? Number(ledgerRow.amount) : 0
+  let myPayout = 0
+  let voided = false
+  for (const row of ledgerRows || []) {
+    if (row.kind === 'payout') myPayout += Number(row.amount)
+    if (row.kind === 'refund') voided = true
+  }
   return {
     winnerCount: null,
     multiplier: null,
     payout: myPayout,
     iWon: myPayout > 0,
     myPayout,
-    distribution: []
+    sides: [],
+    voided
   }
 }
 
@@ -1326,7 +1504,7 @@ export const apiHistory = async (slug, limit) => {
 
   const { data, error } = await supabase
     .from('rounds')
-    .select('id, round_index, result_visible_at, round_results(result_value, recorded_at)')
+    .select('id, round_index, result_visible_at, round_results(result_value, recorded_at), round_attempts(side, offset_value)')
     .eq('game_id', gameRow.id)
     .order('round_index', { ascending: false })
     .limit(limit || 8)
@@ -1334,12 +1512,20 @@ export const apiHistory = async (slug, limit) => {
 
   return (data || [])
     .filter((row) => row.round_results && row.round_results.result_value != null)
-    .map((row) => ({
-      gameSlug: slug,
-      roundIndex: row.round_index,
-      value: row.round_results.result_value,
-      unit: gameRow.result_unit
-    }))
+    .map((row) => {
+      const offsets = [null, null]
+      for (const a of row.round_attempts || []) {
+        const side = normalizeSide(a.side)
+        if (side) offsets[side - 1] = Number(a.offset_value)
+      }
+      return {
+        gameSlug: slug,
+        roundIndex: row.round_index,
+        winner: Number(row.round_results.result_value),
+        offsets,
+        unit: gameRow.result_unit
+      }
+    })
 }
 
 // ---- realtime — a latency optimisation, never a source of truth -----------
@@ -1388,7 +1574,7 @@ export const subscribeOwnBet = async (roundId, userId, onBet) => {
       (payload) => {
         const row = payload.new
         if (!row || row.round_id !== roundId) return
-        onBet({ guess: row.guess, stake: row.stake })
+        onBet({ side: row.guess, stake: row.stake })
       }
     )
     .subscribe((status) => {
@@ -1413,15 +1599,15 @@ export const serverSelectGame = async (slug) => {
   await serverLoadRound(round)
 }
 
-export const serverSubmitBet = async (guess) => {
+export const serverSubmitBet = async (side) => {
   const s = engineData.rootState
   try {
     const roundId = s.round.id
-    await apiPlaceBet(roundId, guess)
+    await apiPlaceBet(roundId, side)
     // Re-read from the server rather than assuming — the client never
     // invents a number the server owns.
     const confirmed = await apiMyBet(roundId)
-    if (confirmed) updateState({ myBet: confirmed, myGuess: confirmed.guess, error: null })
+    if (confirmed) updateState({ myBet: confirmed, mySide: confirmed.side, error: null })
     updateState({ balance: await apiBalance() })
   } catch (err) {
     flashError(describeError(err))
@@ -1435,7 +1621,7 @@ export const serverLoadRound = async (round) => {
   const phase = phaseOf(round, now)
   updateState({
     round,
-    myGuess: null,
+    mySide: null,
     myBet: null,
     result: null,
     settlement: null,
@@ -1458,7 +1644,7 @@ export const serverLoadRound = async (round) => {
     const patch = { playerCount: stats.playerCount, pot: stats.pot }
     if (existingBet) {
       patch.myBet = existingBet
-      patch.myGuess = existingBet.guess
+      patch.mySide = existingBet.side
     }
     // Rejoining after the lock: seed the freeze from the now-immutable stats.
     if (phase !== 'preview' && phase !== 'betting') {
@@ -1466,11 +1652,8 @@ export const serverLoadRound = async (round) => {
     }
     updateState(patch)
 
-    if (phase === 'reveal' || phase === 'results') {
-      const result = await apiRoundResult(round.id)
-      if (result && isCurrent()) {
-        updateState({ result: { value: result.value, unit: s.game ? s.game.resultUnit : '', readings: [] } })
-      }
+    if (phase === 'locked' || phase === 'reveal' || phase === 'results') {
+      await serverRefreshResult(round.id, isCurrent)
     }
     if (phase === 'results') {
       const info = await apiSettlement(round.id)
@@ -1490,9 +1673,29 @@ export const serverLoadRound = async (round) => {
   if (userId) {
     await subscribeOwnBet(round.id, userId, (bet) => {
       if (!isCurrent()) return
-      updateState({ myBet: { guess: bet.guess, stake: bet.stake }, myGuess: bet.guess })
+      updateState({ myBet: { side: bet.side, stake: bet.stake }, mySide: bet.side })
     })
   }
+}
+
+/**
+ * Reads whatever the server will show right now: each attempt's reading as
+ * its own gate opens, and the winner once result_visible_at has passed.
+ * Nothing here is predicted — a row that RLS withholds stays null.
+ */
+export const serverRefreshResult = async (roundId, isCurrent) => {
+  const s = engineData.rootState
+  const attempts = await apiRoundAttempts(roundId)
+  const result = await apiRoundResult(roundId)
+  if (!isCurrent()) return
+  if (!attempts[0] && !attempts[1] && !result) return
+  updateState({
+    result: {
+      unit: s.game ? s.game.resultUnit : '',
+      attempts,
+      winner: result ? result.winner : null
+    }
+  })
 }
 
 export const serverAdvanceRound = async () => {
@@ -1512,22 +1715,26 @@ export const serverAdvanceRound = async () => {
   }
 }
 
-/** Keep the footage where the server timeline says it should be. */
+/**
+ * Keep the footage where the server timeline says it should be. The video
+ * position is derived from ONE anchor — the lock frame sits at
+ * betting_closes_at — so betting plays 0 → lock_at and everything after runs
+ * on continuously. Nothing is ever held except the first frame in preview.
+ */
 export const serverDriveVideo = (phase, now, force) => {
   const s = engineData.rootState
   const node = engineData.videoNode
   const round = s ? s.round : null
   if (!node || !round) return
-  if (phase === 'preview' || phase === 'betting') {
-    videoHoldAt(round.betOpenAt)
-  } else if (phase === 'locked' || phase === 'reveal') {
-    const closes = new Date(round.bettingClosesAt).getTime()
-    const expected = round.betOpenAt + Math.max(0, now - closes) / 1000
-    if (force || Math.abs((node.currentTime || 0) - expected) > 1) videoSeek(expected)
-    videoPlay()
-  } else if (phase === 'results') {
-    if ((node.currentTime || 0) >= round.pauseAt - 0.05 || node.paused) videoHoldAt(round.pauseAt)
+  const closes = new Date(round.bettingClosesAt).getTime()
+  const expected = Math.max(0, round.lockAt + (now - closes) / 1000)
+  if (phase === 'preview') {
+    videoHoldAt(0)
+    return
   }
+  if (node.ended) return
+  if (force || Math.abs((node.currentTime || 0) - expected) > 1) videoSeek(expected)
+  videoPlay()
 }
 
 export const serverTick = (now) => {
@@ -1558,6 +1765,14 @@ export const serverTick = (now) => {
   ) {
     engineData.lastStatsPollAt = snow
     serverPollStats()
+  } else if (
+    (nextPhase === 'locked' || nextPhase === 'reveal') &&
+    !(s.result && s.result.attempts && s.result.attempts[0]) &&
+    snow - engineData.lastStatsPollAt >= STATS_POLL_MS
+  ) {
+    // The first challenger's reading unseals mid-duel, on its own gate.
+    engineData.lastStatsPollAt = snow
+    serverPollAttempts()
   }
 
   if (nextPhase === 'results' && snow >= new Date(s.round.resultsEndAt).getTime()) {
@@ -1584,17 +1799,9 @@ export const serverReconcile = async (phase) => {
         })
       }
     } else if (phase === 'reveal') {
-      const result = await apiRoundResult(round.id)
-      if (result && isCurrent()) {
-        updateState({ result: { value: result.value, unit: s.game ? s.game.resultUnit : '', readings: [] } })
-      }
+      await serverRefreshResult(round.id, isCurrent)
     } else if (phase === 'results') {
-      if (!s.result) {
-        const result = await apiRoundResult(round.id)
-        if (result && isCurrent()) {
-          updateState({ result: { value: result.value, unit: s.game ? s.game.resultUnit : '', readings: [] } })
-        }
-      }
+      await serverRefreshResult(round.id, isCurrent)
       const info = await apiSettlement(round.id)
       const freshBalance = await apiBalance()
       if (isCurrent()) {
@@ -1605,6 +1812,17 @@ export const serverReconcile = async (phase) => {
     }
   } catch (err) {
     flashError(describeError(err))
+  }
+}
+
+export const serverPollAttempts = async () => {
+  const s = engineData.rootState
+  const round = s ? s.round : null
+  if (!round) return
+  try {
+    await serverRefreshResult(round.id, () => !!(s.round && s.round.id === round.id))
+  } catch (err) {
+    // Non-fatal — the next poll or the phase change catches it up.
   }
 }
 
@@ -1924,7 +2142,8 @@ export const storeRoundOpen = (game, round, now) => {
     startedAt: isoAt(now),
     settledAt: null,
     phase: 'preview',
-    result: null,
+    winner: null,
+    offsets: [],
     unit: game.resultUnit,
     readings: [],
     players: 0,
@@ -1956,7 +2175,7 @@ export const storeRoundPhase = (phase, now) => {
 }
 
 /** A bet row plus its stake row. Returns the player (with the new balance). */
-export const storeBet = (playerId, name, isBot, guess, now) => {
+export const storeBet = (playerId, name, isBot, side, now) => {
   const store = storeLoad()
   const row = engineData.demoRoundRow
   if (!row || !storeRoundIsOpen(row)) return null
@@ -1968,8 +2187,7 @@ export const storeBet = (playerId, name, isBot, guess, now) => {
     playerId,
     playerName: name,
     isBot: !!isBot,
-    guess,
-    distance: null,
+    side,
     won: null,
     payout: null,
     placedAt: isoAt(now)
@@ -1994,16 +2212,19 @@ export const storeRoundLock = (frozen, now) => {
 /**
  * Settlement persisted: the round row, per-bet outcomes, payout rows for the
  * winners and ONE rake row to the house for pot minus payouts. The ledger for
- * the round therefore sums to zero. Returns the human player row.
+ * the round therefore sums to zero. A voided duel (§3.2 — dead heat, or no
+ * bet on the winner) writes a refund row per bet instead and no rake row;
+ * the round still nets to zero. Returns the human player row.
  */
-export const storeRoundSettle = (script, settlement, now) => {
+export const storeRoundSettle = (script, winner, settlement, now) => {
   const store = storeLoad()
   const row = engineData.demoRoundRow
   if (!row) return null
   const at = isoAt(now)
-  row.phase = 'ended'
-  row.result = script.result
-  row.readings = script.readings.slice()
+  row.phase = settlement.voided ? 'voided' : 'ended'
+  row.winner = winner
+  row.offsets = script.attempts.map((a) => a.offset)
+  row.readings = script.attempts.map((a) => a.readings.join(' / '))
   row.players = settlement.playerCount
   row.pot = settlement.pot
   row.prize = settlement.prize
@@ -2022,21 +2243,28 @@ export const storeRoundSettle = (script, settlement, now) => {
     const pid = e.mine ? demoPlayerId() : botPlayerId(e.name)
     const bet = byPlayer[pid]
     if (!bet) continue
-    bet.distance = Math.abs(e.guess - script.result)
-    bet.won = !!e.won
+    bet.won = settlement.voided ? null : !!e.won
+    bet.refunded = !!e.refunded
     bet.payout = e.won ? settlement.payout : 0
-    if (e.won) {
+    if (e.refunded) {
+      const player = storePlayer(store, pid, bet.playerName, bet.isBot, false)
+      storeEntry(store, player, 'refund', STAKE, row.id, now)
+    } else if (e.won) {
       const player = storePlayer(store, pid, bet.playerName, bet.isBot, false)
       storeEntry(store, player, 'payout', settlement.payout, row.id, now)
       paid += settlement.payout
     }
   }
-  const rake = row.pot - paid
-  if (row.pot > 0) {
-    const house = storePlayer(store, HOUSE_PLAYER_ID, HOUSE_PLAYER_NAME, false, true)
-    storeEntry(store, house, 'rake', rake, row.id, now)
+  if (!settlement.voided) {
+    const rake = row.pot - paid
+    if (row.pot > 0) {
+      const house = storePlayer(store, HOUSE_PLAYER_ID, HOUSE_PLAYER_NAME, false, true)
+      storeEntry(store, house, 'rake', rake, row.id, now)
+    }
+    row.conservationOk = settlement.conserved === true && rake === settlement.houseTake
+  } else {
+    row.conservationOk = settlement.conserved === true
   }
-  row.conservationOk = settlement.conserved === true && rake === settlement.houseTake
   engineData.demoRoundRow = null
   storeMark()
   storeFlush()
@@ -2141,7 +2369,7 @@ export const camelKey = (k) => k.replace(/_([a-z0-9])/g, (m, c) => c.toUpperCase
 
 /** snake_case → camelCase, deep. Server rows arrive either way. */
 export const camelize = (value) => {
-  if (Array.isArray(value)) return value.map(camelize)
+  if (Array.isArray(value)) return value.map((x) => camelize(x))
   if (value && typeof value === 'object') {
     const out = {}
     for (const k of Object.keys(value)) out[camelKey(k)] = camelize(value[k])
@@ -2174,6 +2402,7 @@ export const wkLiveNow = () => {
     gameTitle: s.game.title,
     roundIndex: s.round.index,
     phase: s.phase,
+    lockAt: s.round.lockAt,
     secondsLeft: s.secondsLeft || 0,
     playerCount: s.playerCount || 0,
     pot: s.pot || 0,
@@ -2217,7 +2446,8 @@ export const wkDemoRoundOut = (row) => ({
   startedAt: row.startedAt,
   settledAt: row.settledAt,
   phase: row.phase,
-  result: row.sealed ? null : row.result,
+  result: row.sealed ? null : (row.winner == null ? null : row.winner),
+  offsets: row.sealed ? [] : (row.offsets || []).slice(),
   unit: row.unit,
   readings: row.sealed ? [] : (row.readings || []).slice(),
   players: row.players,
@@ -2234,16 +2464,16 @@ export const wkDemoRoundOut = (row) => ({
   frozen: row.frozen ? { playerCount: row.frozen.playerCount, pot: row.frozen.pot } : null
 })
 
-/** Sealed rows carry no guess, distance, outcome or payout (integrity.md §5.2). */
+/** Sealed rows carry no side, outcome or payout (integrity.md §5.2). */
 export const wkDemoBetOut = (bet, sealed) => ({
   id: bet.id,
   roundId: bet.roundId,
   playerId: bet.playerId,
   playerName: bet.playerName,
   isBot: !!bet.isBot,
-  guess: sealed ? null : bet.guess,
-  distance: sealed ? null : bet.distance,
+  side: sealed ? null : bet.side,
   won: sealed ? null : bet.won,
+  refunded: sealed ? null : !!bet.refunded,
   payout: sealed ? null : bet.payout,
   placedAt: bet.placedAt
 })
@@ -2256,7 +2486,7 @@ export const wkDemoSealedMap = (store) => {
 
 export const wkDemoRounds = () => {
   const store = storeLoad()
-  return store.rounds.slice().reverse().map(wkDemoRoundOut)
+  return store.rounds.slice().reverse().map((x) => wkDemoRoundOut(x))
 }
 
 export const wkDemoBets = (filter) => {
@@ -2411,17 +2641,27 @@ export const wkDemoRoundDetail = (roundId) => {
   if (!row) return null
   const sealed = row.sealed !== false
   const bets = []
-  const counts = {}
+  const counts = { 1: 0, 2: 0 }
   for (const b of store.bets) {
     if (b.roundId !== roundId) continue
     bets.push(wkDemoBetOut(b, sealed))
-    if (!sealed) counts[b.guess] = (counts[b.guess] || 0) + 1
+    if (!sealed && (b.side === 1 || b.side === 2)) counts[b.side] += 1
   }
-  const distribution = Object.keys(counts)
-    .map((k) => ({ guess: Number(k), count: counts[k] }))
-    .sort((a, b) => a.guess - b.guess)
-  return { round: wkDemoRoundOut(row), distribution, bets }
+  // Sealed: no split at all. Unsealed: both sides, even when one is empty.
+  const sides = sealed ? [] : [{ side: 1, count: counts[1] }, { side: 2, count: counts[2] }]
+  return { round: wkDemoRoundOut(row), sides, bets }
 }
+
+/** A duel script in the workspace's shape (WsScriptTimeline child state). */
+export const wkScriptOut = (sc) => ({
+  id: sc.id,
+  lockAt: sc.lockAt,
+  reveal1At: sc.revealAt[0],
+  reveal2At: sc.revealAt[1],
+  endAt: sc.endAt,
+  winner: duelWinner(sc.attempts),
+  attempts: sc.attempts.map((a) => ({ side: a.side, offset: a.offset, readings: a.readings.slice() }))
+})
 
 export const wkDemoGames = () =>
   Object.keys(DEMO_GAMES).map((slug) => {
@@ -2430,19 +2670,10 @@ export const wkDemoGames = () =>
       slug,
       title: g.title,
       active: demoGameActive(slug),
-      guessMin: g.guessMin,
-      guessMax: g.guessMax,
-      guessStep: g.guessStep,
+      sides: CHALLENGERS.length,
       unit: g.resultUnit,
       videoSrc: videoSrcFor(g.videoFile, false),
-      scripts: (ROUND_SCRIPTS[slug] || []).map((sc) => ({
-        id: sc.id,
-        betOpenAt: sc.betOpenAt,
-        revealAt: sc.revealAt,
-        pauseAt: sc.pauseAt,
-        readings: sc.readings.slice(),
-        result: sc.result
-      }))
+      scripts: (ROUND_SCRIPTS[slug] || []).map((x) => wkScriptOut(x))
     }
   })
 
@@ -2547,6 +2778,7 @@ export const wkServerMe = async () => {
   return { userId: me ? me.userId : null, isStaff: !!(me && me.isStaff), isAdmin: !!(me && me.isAdmin) }
 }
 
+/** The server keeps the side in `guess` (1 or 2). Sealed rows have it null. */
 export const wkServerBetOut = (b) => {
   const sealed = b.guess == null
   return {
@@ -2555,9 +2787,9 @@ export const wkServerBetOut = (b) => {
     playerId: b.playerId,
     playerName: b.playerName,
     isBot: !!b.isBot,
-    guess: sealed ? null : b.guess,
-    distance: sealed ? null : (b.distance == null ? null : b.distance),
+    side: sealed ? null : normalizeSide(b.guess),
     won: sealed ? null : (b.won == null ? null : b.won),
+    refunded: sealed ? null : !!b.refunded,
     payout: sealed ? null : (b.payout == null ? null : b.payout),
     placedAt: b.placedAt
   }
@@ -2571,7 +2803,9 @@ export const wkServerRoundOut = (r) => ({
   startedAt: r.startedAt || null,
   settledAt: r.settledAt || null,
   phase: r.phase,
-  result: r.result == null ? null : r.result,
+  // result_value is the winning side for a duel: 1, 2, or 0 for a dead heat.
+  result: r.result == null ? null : numOr(r.result, null),
+  offsets: Array.isArray(r.offsets) ? r.offsets : [],
   unit: r.unit,
   readings: Array.isArray(r.readings) ? r.readings : [],
   players: numOr(r.players, 0),
@@ -2604,7 +2838,7 @@ export const wkServerOverview = async () => {
 
 export const wkServerRounds = async () => {
   const rows = (await wkRpc('ws_rounds', { limit: WS_ROUNDS_LIMIT, offset: 0 })) || []
-  return rows.map(wkServerRoundOut)
+  return rows.map((x) => wkServerRoundOut(x))
 }
 
 export const wkSeriesFrom = (rounds) => {
@@ -2627,14 +2861,19 @@ export const wkServerRoundDetail = async (roundId) => {
   const d = await wkRpc('ws_round_detail', { round_id: roundId })
   if (!d) return null
   const round = d.round ? wkServerRoundOut(d.round) : null
-  const bets = (d.bets || []).map(wkServerBetOut)
-  let distribution = Array.isArray(d.distribution) ? d.distribution.map((x) => ({ guess: numOr(x.guess, 0), count: numOr(x.count, 0) })) : null
-  if (!distribution) {
-    const counts = {}
-    for (const b of bets) if (b.guess != null) counts[b.guess] = (counts[b.guess] || 0) + 1
-    distribution = Object.keys(counts).map((k) => ({ guess: Number(k), count: counts[k] })).sort((a, b) => a.guess - b.guess)
+  const bets = (d.bets || []).map((x) => wkServerBetOut(x))
+  // ws_round_detail groups by `guess`, which for a duel is the side. A sealed
+  // round returns [] and stays [] — the split is never rebuilt client-side.
+  const counts = { 1: 0, 2: 0 }
+  let unsealed = false
+  for (const x of Array.isArray(d.distribution) ? d.distribution : []) {
+    const side = normalizeSide(x.guess)
+    if (!side) continue
+    unsealed = true
+    counts[side] += numOr(x.count, 0)
   }
-  return { round, distribution, bets }
+  const sides = unsealed ? [{ side: 1, count: counts[1] }, { side: 2, count: counts[2] }] : []
+  return { round, sides, bets }
 }
 
 export const wkServerBets = async (filter) => {
@@ -2645,7 +2884,7 @@ export const wkServerBets = async (filter) => {
   if (f.playerId) filters.player_id = f.playerId
   if (f.won === true || f.won === false) filters.won = f.won
   const rows = (await wkRpc('ws_bets', { filters })) || []
-  return rows.map(wkServerBetOut)
+  return rows.map((x) => wkServerBetOut(x))
 }
 
 export const wkServerPlayers = async () => {
@@ -2700,15 +2939,28 @@ export const wkServerGames = async () => {
     slug: g.slug,
     title: g.title,
     active: g.active == null ? !!g.isActive : !!g.active,
-    guessMin: numOr(g.guessMin, null),
-    guessMax: numOr(g.guessMax, null),
-    guessStep: numOr(g.guessStep, 1),
+    sides: CHALLENGERS.length,
     unit: g.unit || g.resultUnit || '',
     videoSrc: g.videoSrc || videoSrcFor(g.slug === 'water_200g' ? 'water' : 'banana', false),
-    scripts: Array.isArray(g.scripts) ? g.scripts : (ROUND_SCRIPTS[g.slug] || []).map((sc) => ({
-      id: sc.id, betOpenAt: sc.betOpenAt, revealAt: sc.revealAt, pauseAt: sc.pauseAt, readings: sc.readings.slice(), result: sc.result
-    }))
+    scripts: Array.isArray(g.scripts) ? g.scripts.map((x) => wkServerScriptOut(x)) : (ROUND_SCRIPTS[g.slug] || []).map((x) => wkScriptOut(x))
   }))
+}
+
+/** ws_games() script rows (camelized) → the WsScriptTimeline shape. */
+export const wkServerScriptOut = (sc) => {
+  const attempts = (Array.isArray(sc.attempts) ? sc.attempts : [])
+    .map((a) => ({ side: normalizeSide(a.side), offset: numOr(a.offsetValue, 0), readings: Array.isArray(a.readings) ? a.readings : [] }))
+    .filter((a) => a.side)
+    .sort((a, b) => a.side - b.side)
+  return {
+    id: sc.id || `round_${sc.roundIndex}`,
+    lockAt: numOr(sc.videoBetOpenS, 0),
+    reveal1At: sc.videoReveal1S == null ? numOr(sc.videoRevealS, 0) : numOr(sc.videoReveal1S, 0),
+    reveal2At: numOr(sc.videoRevealS, 0),
+    endAt: numOr(sc.videoPauseS, 0),
+    winner: sc.resultValue == null ? null : numOr(sc.resultValue, null),
+    attempts
+  }
 }
 
 export const wkServerIntegrity = async () => {
@@ -2803,7 +3055,10 @@ export const wkBoot = async (el) => {
   if (!engineData.rootState && el) {
     engineData.rootState = typeof el.getRootState === 'function' ? el.getRootState() : el.state
   }
-  if (typeof globalThis !== 'undefined') globalThis.__zse = engineData
+  if (typeof globalThis !== 'undefined') {
+    globalThis.__zse = engineData
+    globalThis.__zseAudio = audioData
+  }
   const data = wkData()
   if (WS_VIEWS.indexOf(data.view) < 0) data.view = 'overview'
   data.loading = true

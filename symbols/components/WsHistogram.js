@@ -1,6 +1,6 @@
-// Guess distribution for the selected round, result marked. Data is
-// ws.roundDetail.distribution — bars scale to the tallest bucket, nothing
-// else is computed. Sealed rounds have no distribution and show a note.
+// Crowd split for the selected round, winning side marked. Data is
+// ws.roundDetail.sides — bars scale to the larger side, nothing else is
+// computed. Sealed rounds have no split and show a note.
 // Plot box: x 16..1264, y 20..136 in a 1280x160 viewBox.
 export const WsHistogram = {
   extends: 'WsPanel',
@@ -28,7 +28,7 @@ export const WsHistogram = {
     theme: 'wsMuted',
     display: (el, s) => {
       const d = (s.ws || {}).roundDetail
-      return d && d.distribution && d.distribution.length ? 'none' : 'flex'
+      return d && d.sides && d.sides.length ? 'none' : 'flex'
     },
     Icon: { name: 'lock', boxSize: 'A', color: 'haze' },
     NoteText: { tag: 'span', text: '{{ wsSealedNote | polyglot }}' }
@@ -41,7 +41,7 @@ export const WsHistogram = {
     attr: { viewBox: '0 0 1280 160' },
     display: (el, s) => {
       const d = (s.ws || {}).roundDetail
-      return d && d.distribution && d.distribution.length ? 'block' : 'none'
+      return d && d.sides && d.sides.length ? 'block' : 'none'
     },
 
     Baseline: {
@@ -59,29 +59,28 @@ export const WsHistogram = {
       childrenAs: 'state',
       children: (el, s) => {
         const d = (s.ws || {}).roundDetail
-        const dist = (d && d.distribution) || []
-        if (!dist.length) return []
-        const sorted = dist.slice().sort((a, b) => a.guess - b.guess)
+        const sides = (d && d.sides) || []
+        if (!sides.length) return []
+        const sorted = sides.slice().sort((a, b) => a.side - b.side)
         const top = sorted.reduce((m, p) => Math.max(m, Number(p.count) || 0), 0) || 1
-        const result = d.round && d.round.result != null ? Number(d.round.result) : null
+        const winner = d.round && d.round.result != null ? Number(d.round.result) : null
         const left = 16
         const width = 1248
         const plotTop = 20
         const base = 136
         const n = sorted.length
         const band = width / n
-        const w = Math.max(2, Math.min(24, band - 2))
+        const w = Math.max(2, Math.min(240, band - 2))
         return sorted.map((p, i) => {
           const count = Number(p.count) || 0
           return {
-            guess: Number(p.guess),
+            side: Number(p.side),
             count,
             x: left + i * band + (band - w) / 2,
             y: base - ((base - plotTop) * count) / top,
             w,
             base,
-            isResult: result != null && Number(p.guess) === result,
-            isEdge: i === 0 || i === n - 1
+            isResult: winner != null && Number(p.side) === winner
           }
         })
       },

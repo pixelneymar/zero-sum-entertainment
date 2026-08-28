@@ -1,68 +1,62 @@
-// Last results for this game, newest first. Collapsible; the open flag is
-// this panel's own UI state, never the app's.
+// Last results for THIS game, newest first (the session history holds every
+// game). Collapsible widget; the open flag is this panel's own UI state,
+// never the app's.
 export const HistoryPanel = {
+  extends: 'CkCard',
+  tag: 'section',
+  attr: { 'aria-label': 'Last results' },
   flow: 'y',
   align: 'stretch flex-start',
-  gap: 'Y',
-  padding: 'A',
+  gap: 'spacing2',
+  padding: 'spacing2 spacing5 spacing5',
   width: 'rail',
-  round: 'B',
-  theme: 'glass',
-  border: '1px solid white.12',
-  shadow: 'glass',
-  backdropFilter: 'blur(1.1rem)',
-  display: (el, s) =>
-    s.root.screen === 'playing' && s.root.phase !== 'intro' && s.root.phase !== 'ended'
-      ? 'flex'
-      : 'none',
+  display: (el, s) => (s.root.screen === 'playing' && s.root.phase !== 'ended' ? 'flex' : 'none'),
 
   state: { open: true },
 
+  // 44px-tall disclosure control with aria-expanded.
   HistoryHead: {
     tag: 'button',
+    attr: { type: 'button', 'aria-expanded': (el, s) => (s.open ? 'true' : 'false') },
     flow: 'x',
     align: 'center space-between',
-    gap: 'A',
+    gap: 'spacing3',
     width: '100%',
+    minHeight: 'touchMin',
     background: 'transparent',
-    color: 'white',
+    color: 'body',
     border: 'none',
-    cursor: 'pointer',
     padding: '0',
-    ':focus-visible': { outline: '2px solid currentColor', outlineOffset: '2px' },
+    fontFamily: 'sans',
+    cursor: 'pointer',
+    ':focus-visible': { outline: 'spacing0_5 solid brandInk', outlineOffset: 'spacing0_5' },
     onClick: (e, el, s) => s.toggle('open'),
 
-    HistoryTitle: {
-      tag: 'span',
-      text: '{{ historyTitle | polyglot }}',
-      fontSize: 'Z',
-      fontWeight: '700',
-      letterSpacing: 'X',
-      textTransform: 'uppercase',
-      theme: 'onVideoMuted'
-    },
-
+    HistoryTitle: { extends: 'CkEyebrow', text: '{{ historyTitle | polyglot }}' },
     HistoryChevron: {
-      tag: 'span',
-      text: '▾',
-      fontSize: 'Z',
-      theme: 'onVideoMuted',
-      transition: 'A defaultBezier',
-      transitionProperty: 'transform',
+      extends: 'Icon',
+      name: 'chevronDown',
+      boxSize: 'icon16',
+      attr: { 'aria-hidden': 'true' },
+      transition: 'transform .15s ease',
+      '@reducedMotion': { transition: 'none' },
       transform: (el, s) => (s.open ? 'rotate(0deg)' : 'rotate(-90deg)')
     }
   },
 
   HistoryList: {
+    tag: 'ul',
     flow: 'y',
     align: 'stretch flex-start',
     gap: '0',
+    margin: '0',
+    padding: '0',
+    listStyle: 'none',
     display: (el, s) => (s.open ? 'flex' : 'none'),
-
     childrenAs: 'state',
     children: (el, s) =>
       (s.root.history || [])
-        .slice()
+        .filter((h) => !s.root.game || h.gameSlug === s.root.game.slug)
         .sort((a, b) => b.roundIndex - a.roundIndex)
         .slice(0, 8),
     childExtends: 'HistoryRow'
@@ -70,10 +64,10 @@ export const HistoryPanel = {
 
   HistoryEmpty: {
     tag: 'span',
+    fontSize: 'fontSm',
+    lineHeight: '1.5',
+    color: 'bodySubtle',
     text: '{{ historyEmpty | polyglot }}',
-    fontSize: 'Z',
-    theme: 'onVideoMuted',
-    display: (el, s) =>
-      s.open && !(s.root.history && s.root.history.length) ? 'inline' : 'none'
+    display: (el, s) => (s.open && !(s.root.history && s.root.history.length) ? 'inline' : 'none')
   }
 }

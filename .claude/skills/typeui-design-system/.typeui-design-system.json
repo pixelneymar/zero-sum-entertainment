@@ -1,0 +1,12 @@
+{
+  "designSystemId": "4b8414f8-03d6-4b10-8d6c-b16ba1dadd92",
+  "installScope": "project",
+  "packageId": "633cc099-bd97-46c6-95a5-779c19322adc",
+  "skillFolderName": "typeui-design-system",
+  "slug": "cypherpunk",
+  "source": "workspace",
+  "templateSlug": "cypherpunk",
+  "type": "typeui-design-system",
+  "variant": "workspace",
+  "workspaceId": "ba822226-aeac-424a-97b6-991c28b56f4e"
+}

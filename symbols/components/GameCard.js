@@ -1,107 +1,88 @@
-// Poster card: a still from the footage, a shade, and the pitch. Variants set
-// the poster and copy; selection goes through selectGame.
+// Poster card (TypeUI section 2, cards.md "with image"): a raised beige card
+// with a 2px ink border, 2px corners and no resting shadow; the poster bleeds
+// to the top edge, the body is padded 24px. The whole card is ONE button
+// (selectGame), so the Play affordance inside is a styled span, never a
+// nested control. Variants set the poster and copy.
 export const GameCard = {
+  extends: 'CkCard',
   tag: 'button',
-  position: 'relative',
+  attr: { type: 'button' },
   flow: 'y',
-  align: 'flex-start flex-end',
+  align: 'stretch flex-start',
   flex: '1',
   minWidth: 'poster',
-  aspectRatio: '4 / 5',
-  padding: 'B',
-  round: 'B',
+  padding: '0',
   overflow: 'hidden',
-  border: '1px solid white.12',
-  background: 'ink',
-  color: 'white',
+  fontFamily: 'sans',
   textAlign: 'left',
   cursor: 'pointer',
-  shadow: 'glass',
-  transition: 'B defaultBezier',
-  transitionProperty: 'transform, border-color, box-shadow',
-  ':hover': { transform: 'translateY(-.35em)', borderColor: 'gold' },
-  ':focus-visible': { outline: '2px solid currentColor', outlineOffset: '3px' },
+  transition: 'box-shadow .15s ease, border-color .15s ease',
+  '@reducedMotion': { transition: 'none' },
+  ':hover': { borderColor: 'darkStrong', boxShadow: 'elevation1' },
+  ':focus-visible': { outline: 'spacing0_5 solid brandInk', outlineOffset: 'spacing0_5' },
 
   Img: {
-    position: 'absolute',
-    inset: '0 0 0 0',
+    display: 'block',
     width: '100%',
-    height: '100%',
+    aspectRatio: '4 / 3',
     objectFit: 'cover',
-    transition: 'C defaultBezier',
-    transitionProperty: 'transform',
+    background: 'neutralQuaternary',
     loading: 'lazy'
   },
 
-  Shade: {
-    position: 'absolute',
-    inset: '0 0 0 0',
-    background: 'posterShade',
-    pointerEvents: 'none'
-  },
-
   CardBody: {
-    position: 'relative',
     flow: 'y',
     align: 'flex-start flex-start',
-    gap: 'Y',
     width: '100%',
+    padding: 'spacing6',
+    '@tabletS': { padding: 'spacing4' },
 
     CardKicker: {
-      tag: 'span',
-      fontSize: 'Z',
-      fontWeight: '700',
-      letterSpacing: 'Y',
-      textTransform: 'uppercase',
-      color: 'gold'
+      extends: 'CkEyebrow',
+      marginBottom: 'spacing3'
     },
 
+    // Card title: 20px semibold (fundamentals cap card titles at 20px).
     CardTitle: {
       tag: 'h2',
-      fontSize: 'E',
-      lineHeight: 'E',
-      fontWeight: '800',
-      letterSpacing: '-Y',
-      margin: '0'
+      fontFamily: 'sans',
+      fontSize: 'fontXl',
+      lineHeight: '1.3',
+      fontWeight: '600',
+      color: 'heading',
+      margin: '0 0 spacing3'
     },
 
     CardLine: {
       tag: 'p',
-      fontSize: 'A',
-      lineHeight: 'B',
-      theme: 'onVideoMuted',
-      margin: '0'
+      fontFamily: 'sans',
+      fontSize: 'fontMd',
+      lineHeight: '1.5',
+      color: 'body',
+      margin: '0 0 spacing3'
     },
 
     CardMeta: {
       flow: 'x',
       align: 'center flex-start',
-      gap: 'Y',
-      fontSize: 'Z',
-      theme: 'onVideoMuted',
-      fontVariantNumeric: 'tabular-nums',
+      gap: 'spacing2',
+      flexWrap: 'wrap',
+      marginBottom: 'spacing6',
 
-      RangeNote: { tag: 'span' },
-      MetaDot: { tag: 'span', text: '·' },
-      StakeNote: { tag: 'span', text: '{{ gameStake | polyglot }}' }
+      StakeNote: {
+        extends: 'CkBadgeBordered',
+        theme: 'badgeAlt',
+        text: '{{ gameStake | polyglot }}'
+      }
     },
 
+    // Visual primary action; the card button owns the click.
     CardAction: {
-      flow: 'x',
-      align: 'center center',
-      gap: 'Y',
-      marginTop: 'Y',
-      padding: 'Y A',
-      round: 'C',
-      background: 'white',
-      color: 'black',
-      fontSize: 'Z',
-      fontWeight: '800',
-      letterSpacing: 'X',
-      textTransform: 'uppercase',
-
+      extends: 'CkButtonPrimary',
+      tag: 'span',
+      attr: { 'aria-hidden': 'true' },
       ActionLabel: { tag: 'span', text: '{{ playNow | polyglot }}' },
-      ActionArrow: { tag: 'span', text: '→' }
+      ActionIcon: { extends: 'Icon', name: 'arrowRight', boxSize: 'icon16' }
     }
   }
 }

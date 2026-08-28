@@ -55,6 +55,74 @@ console.log('\ngame-rules.md §5 — everyone ties (5 players)')
   eq('conservation', r.payout * r.w + r.house, r.pot)
 }
 
+
+// ---- duel shape — docs/game-rules.md §3.1 / §3.2 ---------------------------
+// Winners are every bet on the winning side. No winning bet, or a dead heat,
+// voids the round: every stake refunded, no rake. Payout maths is §4 as-is.
+const duelWinner = (o1, o2) => (Math.abs(o1) === Math.abs(o2) ? 0 : Math.abs(o1) < Math.abs(o2) ? 1 : 2)
+
+function settleDuel (sides, winner) {
+  const players = sides.length
+  const winners = winner === 1 || winner === 2 ? sides.filter(x => x === winner).length : 0
+  const pot = players * STAKE
+  if (winners === 0) {
+    return { players, winners: 0, pot, prize: 0, payout: 0, house: 0, refunds: players * STAKE, voided: true, multiplier: null }
+  }
+  const prize = Math.trunc(pot * (1 - RAKE))
+  const payout = Math.floor(prize / winners)
+  const dust = prize - payout * winners
+  const house = (pot - prize) + dust
+  return { players, winners, pot, prize, payout, dust, house, refunds: 0, voided: false, multiplier: Number((payout / STAKE).toFixed(2)) }
+}
+
+console.log('\nrounds.md — banana duel: −13 vs −15 → side 1; water duel: −39 vs −26 → side 2')
+{
+  eq('banana winner', duelWinner(-13, -15), 1)
+  eq('water winner', duelWinner(-39, -26), 2)
+  eq('equal offsets are a dead heat', duelWinner(-7, 7), 0)
+}
+
+console.log('\nduel — 47 players, 12 back the winner')
+{
+  const sides = Array.from({ length: 47 }, (_, i) => (i < 12 ? 1 : 2))
+  const r = settleDuel(sides, 1)
+  eq('winners = backers of side 1', r.winners, 12)
+  eq('pot', r.pot, 940); eq('prize', r.prize, 893)
+  eq('payout', r.payout, Math.floor(893 / 12))
+  eq('multiplier is post-floor', r.multiplier, Number((Math.floor(893 / 12) / 20).toFixed(2)))
+  eq('conservation', r.payout * r.winners + r.house, r.pot)
+}
+
+console.log('\nduel — everyone backs the winner (5 players)')
+{
+  const r = settleDuel([1, 1, 1, 1, 1], 1)
+  eq('payout below stake', r.payout, 19)
+  eq('conservation', r.payout * r.winners + r.house, r.pot)
+}
+
+console.log('\nduel — no market voids and refunds (§3.2)')
+{
+  const dead = settleDuel([1, 1, 2], 0)
+  eq('dead heat voids', dead.voided, true)
+  eq('dead heat refunds every stake', dead.refunds, 60)
+  eq('dead heat takes no rake', dead.house, 0)
+  const nobody = settleDuel([2, 2, 2, 2], 1)
+  eq('nobody on the winner voids', nobody.voided, true)
+  eq('refund equals pot', nobody.refunds, nobody.pot)
+}
+
+console.log('\nduel — conservation holds for every split 0..200 of 200 players')
+{
+  let bad = 0
+  for (let k = 0; k <= 200; k++) {
+    const sides = Array.from({ length: 200 }, (_, i) => (i < k ? 1 : 2))
+    const r = settleDuel(sides, 1)
+    const back = r.voided ? r.refunds : r.payout * r.winners + r.house
+    if (back !== r.pot) bad++
+  }
+  eq('splits that break conservation', bad, 0)
+}
+
 console.log('\nconservation holds for every crowd size 1..500')
 {
   let bad = 0

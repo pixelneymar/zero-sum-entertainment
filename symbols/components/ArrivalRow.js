@@ -1,24 +1,17 @@
-// One line of the arrivals ticker: "kv_ruth is in". Names only — guesses
-// stay hidden until reveal (state contract v2).
+// One line of the arrivals ticker: "kv_ruth is in". Names only; sides stay
+// hidden until reveal (state contract v2).
 export const ArrivalRow = {
+  tag: 'li',
   flow: 'x',
   align: 'baseline flex-start',
-  gap: 'X',
-  fontSize: 'Z',
+  gap: 'spacing1',
+  fontSize: 'fontSm',
+  lineHeight: '1.5',
+  color: 'body',
   whiteSpace: 'nowrap',
   overflow: 'hidden',
   textOverflow: 'ellipsis',
-  animation: 'tickerIn .45s ease-out both',
 
-  ArrivalName: {
-    tag: 'span',
-    text: (el, s) => s.name || '',
-    fontWeight: '700'
-  },
-
-  ArrivalVerb: {
-    tag: 'span',
-    text: '{{ arrivedVerb | polyglot }}',
-    theme: 'onVideoMuted'
-  }
+  ArrivalName: { tag: 'span', fontWeight: '700', text: (el, s) => s.name || '' },
+  ArrivalVerb: { tag: 'span', text: '{{ arrivedVerb | polyglot }}' }
 }

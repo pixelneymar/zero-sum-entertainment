@@ -1,5 +1,5 @@
-// One bar of the round's guess distribution. Child state: { guess, count,
-// x, y, w, base, isResult, isEdge }. Result bar in gold; the rest recede.
+// One side of the round's crowd split. Child state: { side, count, x, y, w,
+// base, isResult }. The winning side in gold; the other recedes.
 export const WsHistogramBar = {
   tag: 'g',
   color: (el, s) => (s.isResult ? 'gold' : 'haze'),
@@ -21,7 +21,7 @@ export const WsHistogramBar = {
         return `M${x} ${base}V${y + r}Q${x} ${y} ${x + r} ${y}H${x + w - r}Q${x + w} ${y} ${x + w} ${y + r}V${base}Z`
       }
     },
-    Tip: { tag: 'title', text: (el, s) => `${s.guess > 0 ? '+' : ''}${s.guess}: ${s.count}` }
+    Tip: { tag: 'title', text: (el, s) => `C${s.side}: ${s.count}` }
   },
 
   Hit: {
@@ -33,7 +33,7 @@ export const WsHistogramBar = {
       width: (el, s) => String(s.w + 2),
       height: (el, s) => String(s.base)
     },
-    Tip: { tag: 'title', text: (el, s) => `${s.guess > 0 ? '+' : ''}${s.guess}: ${s.count}` }
+    Tip: { tag: 'title', text: (el, s) => `C${s.side}: ${s.count}` }
   },
 
   CountLabel: {
@@ -47,11 +47,10 @@ export const WsHistogramBar = {
       'text-anchor': 'middle',
       fill: 'currentColor'
     },
-    text: (el, s) => String(s.count),
-    display: (el, s) => (s.isResult ? 'block' : 'none')
+    text: (el, s) => String(s.count)
   },
 
-  GuessLabel: {
+  SideLabel: {
     tag: 'text',
     fontSize: 'Z',
     fontWeight: '700',
@@ -62,7 +61,6 @@ export const WsHistogramBar = {
       'text-anchor': 'middle',
       fill: 'currentColor'
     },
-    text: (el, s) => (s.guess > 0 ? `+${s.guess}` : String(s.guess)),
-    display: (el, s) => (s.isResult || s.isEdge ? 'block' : 'none')
+    text: (el, s) => `${s.root.wsChallenger || 'Challenger'} ${s.side}`
   }
 }

@@ -1,91 +1,54 @@
-// Live crowd: player count and pot with a pulse while bets are open, an
-// arrivals ticker, and a hard freeze at LOCK — from then on it renders
-// state.frozen and nothing else, which is the product's one promise.
+// Live crowd widget: player count and pot while bets are open, an arrivals
+// ticker, and a hard freeze at LOCK: from then on it renders state.frozen and
+// nothing else, which is the product's one promise.
+const frozenPhase = (s) => s.phase === 'locked' || s.phase === 'reveal' || s.phase === 'results'
+
 export const CrowdPanel = {
+  extends: 'CkCard',
+  tag: 'section',
+  attr: { 'aria-label': 'The crowd' },
   flow: 'y',
   align: 'stretch flex-start',
-  gap: 'A',
-  padding: 'A',
+  gap: 'spacing4',
+  padding: 'spacing5',
   width: 'rail',
-  round: 'B',
-  theme: 'glass',
-  border: '1px solid white.12',
-  shadow: 'glass',
-  backdropFilter: 'blur(1.1rem)',
   fontVariantNumeric: 'tabular-nums',
-  transition: 'B defaultBezier',
-  transitionProperty: 'background, border-color, box-shadow',
-  display: (el, s) =>
-    s.screen === 'playing' && s.phase !== 'intro' && s.phase !== 'ended'
-      ? 'flex'
-      : 'none',
-  background: (el, s) =>
-    s.phase === 'locked' || s.phase === 'reveal' || s.phase === 'results'
-      ? 'ink.86'
-      : 'steel.62',
-  borderColor: (el, s) =>
-    s.phase === 'locked' || s.phase === 'reveal' || s.phase === 'results'
-      ? 'white.32'
-      : 'white.12',
+  display: (el, s) => (s.screen === 'playing' && s.phase !== 'ended' ? 'flex' : 'none'),
 
   CrowdHead: {
     flow: 'x',
     align: 'center space-between',
-    gap: 'A',
+    gap: 'spacing3',
 
-    CrowdTitle: {
-      tag: 'span',
-      text: '{{ crowdTitle | polyglot }}',
-      fontSize: 'Z',
-      fontWeight: '700',
-      letterSpacing: 'X',
-      textTransform: 'uppercase',
-      theme: 'onVideoMuted'
-    },
+    CrowdTitle: { extends: 'CkEyebrow', text: '{{ crowdTitle | polyglot }}' },
 
     LiveBadge: {
-      flow: 'x',
-      align: 'center center',
-      gap: 'Y',
-      display: (el, s) =>
-        s.phase === 'preview' || s.phase === 'betting' ? 'flex' : 'none',
+      extends: 'CkBadge',
+      theme: 'badgeBrand',
+      gap: 'spacing1_5',
+      attr: { role: 'status' },
+      display: (el, s) => (s.phase === 'preview' || s.phase === 'betting' ? 'inline-flex' : 'none'),
 
       LiveDot: {
         tag: 'span',
-        width: 'Y',
-        height: 'Y',
-        round: 'Y',
-        background: 'ember',
-        animation: 'livePulse 1.4s ease-in-out infinite'
+        width: 'dot',
+        height: 'dot',
+        round: 'radiusFull',
+        background: 'fgBrandStrong',
+        animation: 'livePulse 1.4s ease-in-out infinite',
+        '@reducedMotion': { animation: 'none' },
+        attr: { 'aria-hidden': 'true' }
       },
-      LiveWord: {
-        tag: 'span',
-        text: '{{ liveBadge | polyglot }}',
-        fontSize: 'Z',
-        fontWeight: '800',
-        letterSpacing: 'X',
-        textTransform: 'uppercase',
-        color: 'ember'
-      }
+      LiveWord: { tag: 'span', text: '{{ liveBadge | polyglot }}' }
     },
 
     LockBadge: {
-      flow: 'x',
-      align: 'center center',
-      gap: 'X',
-      theme: 'locked',
-      fontSize: 'Z',
-      fontWeight: '800',
-      letterSpacing: 'X',
-      textTransform: 'uppercase',
-      padding: 'X Y',
-      round: 'Y',
-      display: (el, s) =>
-        s.phase === 'locked' || s.phase === 'reveal' || s.phase === 'results'
-          ? 'flex'
-          : 'none',
-
-      Icon: { name: 'lock', boxSize: 'Z', color: 'black' },
+      extends: 'CkBadgeBordered',
+      theme: 'badgeAlt',
+      gap: 'spacing1',
+      attr: { role: 'status' },
+      display: (el, s) => (frozenPhase(s) ? 'inline-flex' : 'none'),
+      Icon: { name: 'lock', boxSize: 'icon14', attr: { 'aria-hidden': 'true' } },
       LockWord: { tag: 'span', text: '{{ lockedBadge | polyglot }}' }
     }
   },
@@ -93,94 +56,68 @@ export const CrowdPanel = {
   Stats: {
     flow: 'x',
     align: 'flex-end space-between',
-    gap: 'A',
+    gap: 'spacing4',
 
     PlayersStat: {
       flow: 'y',
       align: 'flex-start flex-start',
-      gap: 'X',
-
-      PlayersLabel: {
-        tag: 'span',
-        text: '{{ playersLabel | polyglot }}',
-        fontSize: 'Z',
-        letterSpacing: 'X',
-        textTransform: 'uppercase',
-        theme: 'onVideoMuted'
-      },
-
+      gap: 'spacing1',
+      PlayersLabel: { extends: 'CkEyebrow', text: '{{ playersLabel | polyglot }}' },
       PlayersValue: {
         tag: 'span',
+        fontFamily: 'mono',
+        fontSize: 'font3xl',
+        lineHeight: '1',
+        fontWeight: '700',
+        color: 'heading',
         text: (el, s) => {
-          const frozen =
-            s.frozen &&
-            (s.phase === 'locked' || s.phase === 'reveal' || s.phase === 'results')
-          const value = frozen ? s.frozen.playerCount : s.playerCount
+          const value = s.frozen && frozenPhase(s) ? s.frozen.playerCount : s.playerCount
           return (value ?? 0).toLocaleString('en-US')
-        },
-        fontSize: 'E',
-        lineHeight: 'E',
-        fontWeight: '800',
-        letterSpacing: '-Y'
+        }
       }
     },
 
     PotStat: {
       flow: 'y',
       align: 'flex-end flex-start',
-      gap: 'X',
+      gap: 'spacing1',
       textAlign: 'right',
-
-      PotLabel: {
-        tag: 'span',
-        text: '{{ potLabel | polyglot }}',
-        fontSize: 'Z',
-        letterSpacing: 'X',
-        textTransform: 'uppercase',
-        theme: 'onVideoMuted'
-      },
-
+      PotLabel: { extends: 'CkEyebrow', text: '{{ potLabel | polyglot }}' },
       PotRow: {
         flow: 'x',
         align: 'baseline flex-end',
-        gap: 'X',
-
+        gap: 'spacing1',
         PotValue: {
           tag: 'span',
+          fontFamily: 'mono',
+          fontSize: 'font3xl',
+          lineHeight: '1',
+          fontWeight: '700',
+          color: 'heading',
           text: (el, s) => {
-            const frozen =
-              s.frozen &&
-              (s.phase === 'locked' || s.phase === 'reveal' || s.phase === 'results')
-            const value = frozen ? s.frozen.pot : s.pot
+            const value = s.frozen && frozenPhase(s) ? s.frozen.pot : s.pot
             return (value ?? 0).toLocaleString('en-US')
-          },
-          fontSize: 'E',
-          lineHeight: 'E',
-          fontWeight: '800',
-          letterSpacing: '-Y',
-          color: 'gold'
+          }
         },
-
-        PotUnit: {
-          tag: 'span',
-          text: '{{ chipsUnit | polyglot }}',
-          fontSize: 'Z',
-          theme: 'onVideoMuted'
-        }
+        PotUnit: { tag: 'span', fontSize: 'fontSm', lineHeight: '1.3', color: 'bodySubtle', text: '{{ chipsUnit | polyglot }}' }
       }
     }
   },
 
   Ticker: {
+    tag: 'ul',
     flow: 'y',
     align: 'stretch flex-start',
-    gap: 'X',
-    minHeight: 'C',
-    borderTop: '1px solid white.10',
-    paddingTop: 'Y',
-    display: (el, s) =>
-      s.phase === 'preview' || s.phase === 'betting' ? 'flex' : 'none',
-
+    gap: 'spacing1',
+    minHeight: 'spacing20',
+    margin: '0',
+    padding: 'spacing3 0 0',
+    listStyle: 'none',
+    borderTopWidth: 'spacing0_5',
+    borderTopStyle: 'solid',
+    borderTopColor: 'borderDefault',
+    attr: { 'aria-label': 'Arrivals' },
+    display: (el, s) => (s.phase === 'preview' || s.phase === 'betting' ? 'flex' : 'none'),
     childrenAs: 'state',
     children: (el, s) => (s.arrivals || []).slice(-4).reverse(),
     childExtends: 'ArrivalRow'
@@ -188,18 +125,18 @@ export const CrowdPanel = {
 
   FrozenNote: {
     flow: 'x',
-    align: 'center flex-start',
-    gap: 'Y',
-    minHeight: 'C',
-    borderTop: '1px solid white.10',
-    paddingTop: 'Y',
-    fontSize: 'Z',
-    theme: 'onVideoMuted',
-    display: (el, s) =>
-      s.phase === 'locked' || s.phase === 'reveal' || s.phase === 'results'
-        ? 'flex'
-        : 'none',
-
+    align: 'flex-start flex-start',
+    gap: 'spacing2',
+    minHeight: 'spacing20',
+    padding: 'spacing3 0 0',
+    borderTopWidth: 'spacing0_5',
+    borderTopStyle: 'solid',
+    borderTopColor: 'borderDefault',
+    fontSize: 'fontSm',
+    lineHeight: '1.5',
+    color: 'body',
+    display: (el, s) => (frozenPhase(s) ? 'flex' : 'none'),
+    Icon: { name: 'lock', boxSize: 'icon16', flexShrink: '0', attr: { 'aria-hidden': 'true' } },
     FrozenText: { tag: 'span', text: '{{ lockedNote | polyglot }}' }
   }
 }

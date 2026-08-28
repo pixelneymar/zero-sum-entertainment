@@ -1,261 +1,169 @@
-// The bet dock. A real range slider (min/max/step from the game) plus
-// quick-pick chips; the readout is the big numeral. Guess changes go through
-// setGuess, the bet through submitBet — the server is the only judge.
+// The bet dock (TypeUI section 4, widget). Two challenger cards: tap one, then
+// PLACE BET. The stake is standard (20 chips) and the bet is a side, nothing
+// more. Picks go through setSide, the bet through submitBet; the server is
+// the only judge. A raised widget card (cards.md, 20px widget padding).
 export const BetPanel = {
+  extends: 'CkCard',
+  tag: 'section',
+  attr: { 'aria-label': 'Place your bet' },
   flow: 'y',
   align: 'stretch flex-start',
-  gap: 'A',
-  padding: 'A B',
+  gap: 'spacing4',
+  padding: 'spacing5',
   width: 'dock',
   maxWidth: '94vw',
-  round: 'B',
-  theme: 'glass',
-  border: '1px solid white.12',
-  shadow: 'glass',
-  backdropFilter: 'blur(1.1rem)',
-  transition: 'B defaultBezier',
-  transitionProperty: 'background, border-color, box-shadow',
   display: (el, s) =>
     s.screen === 'playing' &&
     (s.phase === 'preview' || s.phase === 'betting' || s.phase === 'locked')
       ? 'flex'
       : 'none',
-  background: (el, s) => (s.phase === 'locked' ? 'ink.86' : 'steel.62'),
-  borderColor: (el, s) => (s.phase === 'locked' ? 'white.32' : 'white.12'),
 
   HeadRow: {
     flow: 'x',
-    align: 'flex-end space-between',
-    gap: 'A',
+    align: 'flex-start space-between',
+    gap: 'spacing4',
+    flexWrap: 'wrap',
 
     PromptBlock: {
       flow: 'y',
       align: 'flex-start flex-start',
-      gap: 'X',
+      gap: 'spacing1',
+      minWidth: '0',
 
-      BetPrompt: {
-        tag: 'span',
-        text: '{{ betPrompt | polyglot }}',
-        fontSize: 'Z',
-        fontWeight: '700',
-        letterSpacing: 'X',
-        textTransform: 'uppercase',
-        theme: 'onVideoMuted'
-      },
+      BetPrompt: { extends: 'CkEyebrow', text: '{{ betPrompt | polyglot }}' },
 
+      // Widget title (typography.md widget-title: 20px medium).
       ObjectiveText: {
-        tag: 'span',
-        text: (el, s) => (s.game ? s.game.objectiveLine : ''),
-        fontSize: 'A',
-        fontWeight: '600',
-        letterSpacing: '-X'
+        tag: 'h2',
+        fontFamily: 'sans',
+        fontSize: 'fontXl',
+        lineHeight: '1.3',
+        fontWeight: '500',
+        color: 'heading',
+        margin: '0',
+        text: (el, s) => (s.game ? s.game.objectiveLine : '')
       }
     },
 
-    Readout: {
-      flow: 'x',
-      align: 'baseline flex-end',
-      gap: 'Y',
-      fontVariantNumeric: 'tabular-nums',
-
-      ReadoutValue: {
-        tag: 'span',
-        text: (el, s) => {
-          const value = s.myBet ? s.myBet.guess : s.myGuess == null ? 0 : s.myGuess
-          return value > 0 ? `+${value}` : String(value)
-        },
-        fontSize: 'G',
-        lineHeight: 'G',
-        fontWeight: '800',
-        letterSpacing: '-Y',
-        transition: 'A defaultBezier',
-        transitionProperty: 'color',
-        color: (el, s) => (s.myBet ? 'gold' : 'white')
-      },
-
-      ReadoutUnit: {
-        tag: 'span',
-        text: (el, s) => (s.game ? s.game.resultUnit : ''),
-        fontSize: 'B',
-        theme: 'onVideoMuted'
-      }
+    TargetChip: {
+      extends: 'CkBadgeBordered',
+      theme: 'badgeNeutral',
+      padding: 'spacing1 spacing2',
+      fontSize: 'fontSm',
+      TargetText: { tag: 'span', text: (el, s) => (s.game ? s.game.targetLine : '') }
     }
   },
 
-  SliderRow: {
-    flow: 'y',
-    align: 'stretch flex-start',
-    gap: 'Y',
-    transition: 'A defaultBezier',
-    transitionProperty: 'opacity',
-    opacity: (el, s) =>
-      !s.myBet && (s.phase === 'preview' || s.phase === 'betting') ? '1' : '.4',
-    pointerEvents: (el, s) =>
-      !s.myBet && (s.phase === 'preview' || s.phase === 'betting') ? 'auto' : 'none',
-
-    Input: {
-      type: 'range',
-      width: '100%',
-      height: 'B',
-      margin: '0',
-      padding: '0',
-      background: 'transparent',
-      border: 'none',
-      cursor: 'pointer',
-      accentColor: 'gold',
-      aria: { label: (el, s) => s.betPrompt || '' },
-      min: (el, s) => String(s.game ? s.game.guessMin : -20),
-      max: (el, s) => String(s.game ? s.game.guessMax : 20),
-      step: (el, s) => String(s.game && s.game.guessStep ? s.game.guessStep : 1),
-      disabled: (el, s) =>
-        !(!s.myBet && (s.phase === 'preview' || s.phase === 'betting')),
-      value: (el, s) => String(s.myBet ? s.myBet.guess : s.myGuess == null ? 0 : s.myGuess),
-      ':focus-visible': { outline: '2px solid currentColor', outlineOffset: '4px' },
-      onInput: (e, el, s) => {
-        if (s.myBet || (s.phase !== 'preview' && s.phase !== 'betting')) return
-        el.call('setGuess', Number(e.target.value))
-      }
-    },
-
-    ScaleRow: {
-      flow: 'x',
-      align: 'center space-between',
-      fontSize: 'Z',
-      fontVariantNumeric: 'tabular-nums',
-      theme: 'onVideoMuted',
-
-      ScaleMin: {
-        tag: 'span',
-        text: (el, s) => (s.game ? `${s.game.guessMin} ${s.game.resultUnit}` : '')
-      },
-      ScaleZero: { tag: 'span', text: '{{ scaleExact | polyglot }}' },
-      ScaleMax: {
-        tag: 'span',
-        text: (el, s) => (s.game ? `+${s.game.guessMax} ${s.game.resultUnit}` : '')
-      }
-    }
-  },
-
-  Chips: {
+  Sides: {
     flow: 'x',
-    align: 'center center',
-    gap: 'Y',
-    flexWrap: 'wrap',
-    transition: 'A defaultBezier',
-    transitionProperty: 'opacity',
-    opacity: (el, s) =>
-      !s.myBet && (s.phase === 'preview' || s.phase === 'betting') ? '1' : '.4',
-    pointerEvents: (el, s) =>
-      !s.myBet && (s.phase === 'preview' || s.phase === 'betting') ? 'auto' : 'none',
-
+    align: 'stretch center',
+    gap: 'spacing3',
+    attr: { role: 'group', 'aria-label': 'Who lands closer?' },
     childrenAs: 'state',
-    children: (el, s) => {
-      const game = s.game
-      const max = game ? Math.abs(game.guessMax) : 20
-      const step = game && game.guessStep ? game.guessStep : 1
-      const snap = (n) => Math.round(n / step) * step
-      return [-1, -0.5, -0.2, 0, 0.2, 0.5, 1].map((fraction) => ({
-        value: snap(fraction * max)
-      }))
-    },
-    childExtends: 'GuessChip'
+    children: (el, s) => (s.game && s.game.challengers ? s.game.challengers : []),
+    childExtends: 'ChallengerCard'
   },
 
   ActionRow: {
     flow: 'x',
     align: 'center space-between',
-    gap: 'A',
+    gap: 'spacing4',
     flexWrap: 'wrap',
 
-    StakeNote: {
-      tag: 'span',
-      text: '{{ rakeNote | polyglot }}',
-      fontSize: 'Z',
-      theme: 'onVideoMuted'
+    NoteBlock: {
+      flow: 'y',
+      align: 'flex-start flex-start',
+      gap: 'spacing1',
+      minWidth: '0',
+
+      StakeNote: {
+        tag: 'span',
+        fontSize: 'fontSm',
+        lineHeight: '1.3',
+        color: 'bodySubtle',
+        text: '{{ rakeNote | polyglot }}'
+      },
+
+      // Inline reason for a disabled PLACE BET (fundamentals: disabled state
+      // answers "what would unblock this?").
+      DisabledReason: {
+        tag: 'span',
+        fontSize: 'fontSm',
+        lineHeight: '1.3',
+        fontWeight: '500',
+        color: 'heading',
+        attr: { 'aria-live': 'polite' },
+        display: (el, s) => (!s.myBet && (s.phase === 'preview' || (s.phase === 'betting' && !s.mySide)) ? 'inline' : 'none'),
+        PreviewReason: { tag: 'span', text: '{{ betsOpenSoon | polyglot }}', display: (el, s) => (s.phase === 'preview' ? 'inline' : 'none') },
+        PickReason: { tag: 'span', text: '{{ pickFirst | polyglot }}', display: (el, s) => (s.phase === 'betting' && !s.mySide ? 'inline' : 'none') }
+      }
     },
 
+    // Success state: icon + label + the backed side (badges.md success).
     PlacedRow: {
-      flow: 'x',
-      align: 'center flex-start',
-      gap: 'Y',
-      display: (el, s) => (s.myBet ? 'flex' : 'none'),
-      animation: 'popIn .4s ease-out both',
+      extends: 'CkBadgeBordered',
+      theme: 'badgeSuccess',
+      padding: 'spacing2 spacing3',
+      fontSize: 'fontMd',
+      gap: 'spacing1_5',
+      attr: { role: 'status', 'aria-live': 'polite' },
+      display: (el, s) => (s.myBet ? 'inline-flex' : 'none'),
 
-      PlacedTick: {
+      Icon: { name: 'check', boxSize: 'icon16', attr: { 'aria-hidden': 'true' } },
+      PlacedLabel: { tag: 'span', fontWeight: '700', text: '{{ betPlaced | polyglot }}' },
+      PlacedOn: {
         tag: 'span',
-        text: '✓',
-        fontSize: 'A',
-        fontWeight: '800',
-        color: 'mint'
-      },
-      PlacedLabel: {
-        tag: 'span',
-        text: '{{ betPlaced | polyglot }}',
-        fontSize: 'A',
-        fontWeight: '700'
+        text: (el, s) => {
+          if (!s.myBet || !s.game || !s.game.challengers) return ''
+          const c = s.game.challengers[s.myBet.side - 1]
+          return c ? `· ${c.name}` : ''
+        }
       },
       PlacedStake: {
         tag: 'span',
-        text: (el, s) => (s.myBet ? `· ${s.myBet.stake}` : ''),
-        fontSize: 'Z',
-        theme: 'onVideoMuted'
-      },
-      PlacedUnit: {
-        tag: 'span',
-        text: '{{ chipsUnit | polyglot }}',
-        fontSize: 'Z',
-        theme: 'onVideoMuted'
+        text: (el, s) => (s.myBet ? `· ${s.myBet.stake} ${s.chipsUnit || 'chips'}` : '')
       }
     },
 
     PlaceButton: {
-      tag: 'button',
-      flow: 'x',
-      align: 'center center',
-      border: 'none',
-      fontFamily: 'inherit',
-      background: 'brand',
-      color: 'white',
-      ':hover': { background: 'brand+8' },
-      round: 'C',
-      padding: 'Z C',
-      fontSize: 'A',
-      fontWeight: '800',
-      letterSpacing: 'X',
-      textTransform: 'uppercase',
-      cursor: 'pointer',
-      transition: 'A defaultBezier',
-      transitionProperty: 'opacity, background, transform',
+      extends: 'CkButtonPrimary',
+      attr: {
+        type: 'button',
+        disabled: (el, s) => (s.phase === 'betting' && s.mySide && !s.myBet ? undefined : 'true'),
+        'aria-disabled': (el, s) => (s.phase === 'betting' && s.mySide && !s.myBet ? 'false' : 'true')
+      },
       display: (el, s) => (s.myBet ? 'none' : 'inline-flex'),
-      opacity: (el, s) => (s.phase === 'betting' ? '1' : '.45'),
-      pointerEvents: (el, s) => (s.phase === 'betting' ? 'auto' : 'none'),
-      ':active': { transform: 'scale(.97)' },
-      ':focus-visible': { outline: '2px solid currentColor', outlineOffset: '2px' },
+      opacity: (el, s) => (s.phase === 'betting' && s.mySide ? '1' : '.5'),
+      ':disabled': { cursor: 'not-allowed' },
       onClick: (e, el, s) => {
         if (s.myBet || s.phase !== 'betting') return
-        // The server's place_bet is the only judge — a rejection surfaces via
-        // state.error while myBet stays null.
-        el.call('submitBet', s.myGuess == null ? 0 : s.myGuess)
+        // The server's place_bet is the only judge: a rejection surfaces via
+        // state.error while myBet stays null. No side picked, same path.
+        el.call('submitBet', s.mySide)
       },
 
-      PlaceLabel: {
+      PlaceLabel: { tag: 'span', text: '{{ placeBet | polyglot }}' },
+      PlaceSide: {
         tag: 'span',
-        text: '{{ placeBet | polyglot }}'
+        text: (el, s) => {
+          if (!s.mySide || !s.game || !s.game.challengers) return ''
+          const c = s.game.challengers[s.mySide - 1]
+          return c ? `· ${c.name}` : ''
+        }
       }
     },
 
     LockedNote: {
-      flow: 'x',
-      align: 'center flex-end',
-      gap: 'Y',
-      fontSize: 'Z',
-      fontWeight: '700',
-      letterSpacing: 'X',
-      textTransform: 'uppercase',
-      display: (el, s) => (s.phase === 'locked' ? 'flex' : 'none'),
+      extends: 'CkBadgeBordered',
+      theme: 'badgeAlt',
+      padding: 'spacing2 spacing3',
+      fontSize: 'fontMd',
+      gap: 'spacing1_5',
+      attr: { role: 'status' },
+      display: (el, s) => (s.phase === 'locked' ? 'inline-flex' : 'none'),
 
-      Icon: { name: 'lock', boxSize: 'Z', color: 'white' },
-      LockedText: { tag: 'span', text: '{{ betsLocked | polyglot }}' }
+      Icon: { name: 'lock', boxSize: 'icon16', attr: { 'aria-hidden': 'true' } },
+      LockedText: { tag: 'span', fontWeight: '700', text: '{{ betsLocked | polyglot }}' }
     }
   }
 }

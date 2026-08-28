@@ -1,30 +1,24 @@
 // Product requirement (docs/decisions.md O2): a simulated crowd must be
 // labelled. Visible for the whole session whenever state.mode === 'demo'.
+// Warning-intent badge with a status dot (badges.md "with dot"); the text
+// label is the non-colour cue.
 export const DemoBadge = {
-  flow: 'x',
-  align: 'center center',
-  gap: 'Y',
-  padding: 'X Z',
-  round: 'C',
-  theme: 'chip',
-  border: '1px solid white.14',
-  fontSize: 'Z',
-  fontWeight: '700',
-  letterSpacing: 'X',
-  textTransform: 'uppercase',
-  whiteSpace: 'nowrap',
-  display: (el, s) => (s.mode === 'demo' ? 'flex' : 'none'),
+  extends: 'CkBadgeBordered',
+  theme: 'badgeWarning',
+  padding: 'spacing1 spacing2',
+  fontSize: 'fontSm',
+  gap: 'spacing1_5',
+  alignSelf: 'center',
+  display: (el, s) => (s.mode === 'demo' ? 'inline-flex' : 'none'),
 
   DemoDot: {
     tag: 'span',
-    width: 'Y',
-    height: 'Y',
-    round: 'Y',
-    background: 'gold'
+    width: 'dot',
+    height: 'dot',
+    flexShrink: '0',
+    round: 'radiusFull',
+    background: 'fgWarning',
+    attr: { 'aria-hidden': 'true' }
   },
-
-  DemoLabel: {
-    tag: 'span',
-    text: '{{ demoBadge | polyglot }}'
-  }
+  DemoLabel: { tag: 'span', text: '{{ demoBadge | polyglot }}' }
 }
