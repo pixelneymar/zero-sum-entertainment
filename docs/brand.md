@@ -1,8 +1,8 @@
 # Zero Sum Games — brand
 
-Owner decision, 2026-08-28: the brand takes its colour from Higgsfield
-(near-black, white, acid lime) and drops the Perspective typography (Zalando
-Sans SemiExpanded) as too dull. This file is the single source of truth for
+Owner decision, 2026-08-28: the logo takes its colour from Higgsfield
+(near-black, white, acid lime); the product typography drops Zalando Sans
+SemiExpanded as too dull; the product surfaces keep the Perspective palette. This file is the single source of truth for
 the logo, the palette and the type. Components reference it; they do not
 invent brand values.
 
@@ -46,6 +46,12 @@ Rules:
 
 ## Palette (from higgsfield.ai computed styles, 2026-08-28)
 
+**Scope: the logo and brand collateral.** The product surfaces keep the TypeUI
+Perspective palette (navy `#060B18`, brand blue `#0166FF`) — owner decision,
+confirmed after the logo shipped (`c8ba780`). The table below is the palette
+the mark is drawn in and the reference for any future brand-only surface
+(share images, app icon, marketing pages).
+
 | Token | Hex | Role |
 | --- | --- | --- |
 | `ink` | `#0F1113` | page background, the stage |
@@ -60,7 +66,7 @@ Contrast, measured: lime `#D1FE17` on `#0F1113` = 16.1:1; white on `#0F1113`
 = 18.9:1; `#898A8B` on `#0F1113` = 5.5:1. Near-black text on lime = 16.1:1.
 All pass AA for normal text.
 
-Lime is an **accent**. Sections stay near-black. Lime never fills a section
+Inside brand collateral, lime is an **accent**; it never fills a section
 background (that was the Cypherpunk look, which the owner moved off).
 
 ## Typography
